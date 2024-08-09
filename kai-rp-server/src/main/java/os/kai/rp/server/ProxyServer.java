@@ -7,6 +7,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
+import os.kai.rp.LineBasedChannelInitializer;
 
 @Slf4j
 public class ProxyServer {
@@ -16,13 +17,6 @@ public class ProxyServer {
     private final int port;
 
     private final long timeout;
-
-    private final ChannelInitializer<SocketChannel> handler = new ChannelInitializer<SocketChannel>() {
-        @Override
-        protected void initChannel(SocketChannel ch) throws Exception {
-            ch.pipeline().addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE)).addLast(new ProxyClientHandler(timeout));
-        }
-    };
 
     public ProxyServer(String host,int port,long timeout) {
         this.host = host;
@@ -42,7 +36,7 @@ public class ProxyServer {
             ChannelFuture channelFuture = new ServerBootstrap()
                     .group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
-                    .childHandler(handler)
+                    .childHandler(new LineBasedChannelInitializer(()->new ProxyClientHandler(timeout)))
                     .option(ChannelOption.SO_BACKLOG,128)
                     .childOption(ChannelOption.SO_KEEPALIVE,false)
                     .bind(host,port)

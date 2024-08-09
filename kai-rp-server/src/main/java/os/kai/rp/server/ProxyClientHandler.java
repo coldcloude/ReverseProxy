@@ -1,21 +1,21 @@
 package os.kai.rp.server;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.extern.slf4j.Slf4j;
+import os.kai.rp.NettySender;
+import os.kai.rp.NettyUtil;
+import os.kai.rp.ProxyHub;
 import os.kai.rp.ProxyTag;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+@Slf4j
 public class ProxyClientHandler extends ChannelInboundHandlerAdapter {
 
     private static final int INIT = 0;
@@ -25,78 +25,33 @@ public class ProxyClientHandler extends ChannelInboundHandlerAdapter {
 
     private final long timeout;
 
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
-
-    private final AtomicInteger state = new AtomicInteger();
-
-    private final AtomicReference<ChannelHandlerContext> context = new AtomicReference<>();
-
-    private final AtomicReference<Timer> timer = new AtomicReference<>();
-
     private final AtomicLong lastUpdateTime = new AtomicLong();
-
-    private final AtomicReference<String> sessionId = new AtomicReference<>();
-
-    private final LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
-
-    private static String unpack(String line, String startTag, String endTag){
-        String r = null;
-        int ll = line.length();
-        if(ll>=ProxyTag.TAG_START_LEN+ProxyTag.TAG_END_LEN&&line.startsWith(startTag)&&line.endsWith(endTag)){
-            r = line.substring(ProxyTag.TAG_START_LEN,ll-ProxyTag.TAG_END_LEN);
-        }
-        return r;
-    }
 
     private void tick(){
         lastUpdateTime.set(System.currentTimeMillis());
     }
 
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+    private final AtomicInteger state = new AtomicInteger();
+
+    private volatile Timer timer;
+
+    private volatile String sessionId;
+
+    private volatile NettySender sender;
+
     private class Ticker extends TimerTask{
+        private final ChannelHandlerContext ctx;
+        private Ticker(ChannelHandlerContext ctx) {
+            this.ctx = ctx;
+        }
         @Override
         public void run() {
             long time = System.currentTimeMillis();
             if(time-lastUpdateTime.get()>timeout){
                 stop();
-                lock.readLock().lock();
-                try{
-                    ChannelHandlerContext ctx = context.get();
-                    if(ctx!=null){
-                        ctx.disconnect();
-                    }
-                }
-                finally{
-                    lock.readLock().unlock();
-                }
-            }
-        }
-    }
-
-    private class Sender extends Thread {
-        @Override
-        public void run() {
-            while(state.get()==RUNNING){
-                Thread.interrupted();
-                try{
-                    String data = queue.take();
-                    lock.readLock().lock();
-                    try{
-                        int s = state.get();
-                        ChannelHandlerContext ctx = context.get();
-                        if(s==RUNNING&&ctx!=null){
-                            String str = ProxyTag.DATA_START+data+ProxyTag.DATA_END;
-                            ByteBuf msg = Unpooled.copiedBuffer(str.getBytes(StandardCharsets.UTF_8));
-                            ctx.write(msg);
-                            ctx.flush();
-                        }
-                    }
-                    finally{
-                        lock.readLock().unlock();
-                    }
-                }
-                catch(InterruptedException e){
-                    Thread.currentThread().interrupt();
-                }
+                ctx.disconnect();
             }
         }
     }
@@ -104,8 +59,9 @@ public class ProxyClientHandler extends ChannelInboundHandlerAdapter {
     public ProxyClientHandler(long timeout) {
         this.timeout = timeout;
         state.set(INIT);
-        context.set(null);
-        sessionId.set(null);
+        timer = null;
+        sessionId = null;
+        sender = null;
     }
 
     @Override
@@ -117,10 +73,8 @@ public class ProxyClientHandler extends ChannelInboundHandlerAdapter {
                 s = state.get();
                 if(s==INIT){
                     state.set(PENDING);
-                    context.set(ctx);
-                    Timer t = new Timer();
-                    timer.set(t);
-                    t.schedule(new Ticker(),timeout/3);
+                    timer = new Timer();
+                    timer.schedule(new Ticker(ctx),timeout/3);
                 }
             }
             finally{
@@ -133,33 +87,16 @@ public class ProxyClientHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         stop();
-        ChannelHandlerContext c = context.get();
-        if(c!=null){
-            lock.writeLock().lock();
-            try{
-                c = context.get();
-                if(c!=null){
-                    context.set(null);
-                }
-            }
-            finally{
-                lock.writeLock().unlock();
-            }
-        }
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx,Object msg) throws Exception {
-        ByteBuf buf = (ByteBuf) msg;
-        byte[] req = new byte[buf.readableBytes()];
-        buf.readBytes(req);
-        String body = new String(req,StandardCharsets.UTF_8);
-        body = body.trim();
+        String body = NettyUtil.readLine(msg);
         if(body.equals(ProxyTag.KEEP_SINGLE)){
             tick();
         }
         else {
-            String sid = unpack(body,ProxyTag.INIT_START,ProxyTag.INIT_END);
+            String sid = ProxyTag.unpackInit(body);
             if(sid!=null){
                 int s = state.get();
                 if(s==PENDING){
@@ -168,7 +105,12 @@ public class ProxyClientHandler extends ChannelInboundHandlerAdapter {
                         s = state.get();
                         if(s==PENDING){
                             state.set(RUNNING);
-                            ProxyHub.get().registerClientReceiver(sid,queue::offer);
+                            //start sender
+                            sender = new NettySender(ctx);
+                            sender.start();
+                            //register receiver
+                            ProxyHub.get().registerClientReceiver(sid,sender);
+                            sessionId = sid;
                             tick();
                         }
                     }
@@ -178,14 +120,14 @@ public class ProxyClientHandler extends ChannelInboundHandlerAdapter {
                 }
             }
             else {
-                String data = unpack(body,ProxyTag.DATA_START,ProxyTag.DATA_END);
+                String data = ProxyTag.unpackData(body);
                 if(data!=null){
                     lock.readLock().lock();
                     try{
                         int s = state.get();
-                        sid = sessionId.get();
-                        if(s==RUNNING&&sid!=null){
-                            ProxyHub.get().sendToServer(sid,data);
+                        if(s==RUNNING&&sessionId!=null){
+                            ProxyHub.get().sendToServer(sessionId,data);
+                            tick();
                         }
                     }
                     finally{
@@ -194,6 +136,11 @@ public class ProxyClientHandler extends ChannelInboundHandlerAdapter {
                 }
             }
         }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx,Throwable cause) throws Exception {
+        log.warn("sessionId="+sessionId+", channelId="+ctx.channel().id().asShortText(),cause);
     }
 
     public void stop(){
@@ -206,15 +153,19 @@ public class ProxyClientHandler extends ChannelInboundHandlerAdapter {
                     //stop state
                     state.set(STOPPED);
                     //stop timer
-                    Timer t = timer.get();
-                    if(t!=null){
-                        t.cancel();
-                        timer.set(null);
+                    if(timer!=null){
+                        timer.cancel();
+                        timer = null;
                     }
                     //stop session
-                    String sid = sessionId.get();
-                    if(sid!=null){
-                        ProxyHub.get().removeClientReceiver(sid);
+                    if(sessionId!=null){
+                        ProxyHub.get().removeClientReceiver(sessionId);
+                        sessionId = null;
+                    }
+                    //stop sender
+                    if(sender!=null){
+                        sender.shutdown();
+                        sender = null;
                     }
                 }
             }

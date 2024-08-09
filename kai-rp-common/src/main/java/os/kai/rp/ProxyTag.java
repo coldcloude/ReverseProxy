@@ -23,4 +23,21 @@ public class ProxyTag {
     private static String singleTag(String tag){
         return "<"+tag+" />";
     }
+
+    private static String unpack(String line, String startTag, String endTag){
+        String r = null;
+        int ll = line.length();
+        if(ll>=TAG_START_LEN+TAG_END_LEN&&line.startsWith(startTag)&&line.endsWith(endTag)){
+            r = line.substring(TAG_START_LEN,ll-TAG_END_LEN);
+        }
+        return r;
+    }
+
+    public static String unpackInit(String line){
+        return unpack(line,INIT_START,INIT_END);
+    }
+
+    public static String unpackData(String line){
+        return unpack(line,DATA_START,DATA_END);
+    }
 }

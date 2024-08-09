@@ -1,4 +1,4 @@
-package os.kai.rp.server;
+package os.kai.rp;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -7,20 +7,17 @@ import java.util.function.Consumer;
 
 public class ProxyHub {
 
-    private static final AtomicReference<ProxyHub> hub = new AtomicReference<>();
+    private static volatile ProxyHub hub = null;
 
     public static ProxyHub get(){
-        ProxyHub h = hub.get();
-        if(h==null){
+        if(hub==null){
             synchronized(ProxyHub.class){
-                h = hub.get();
-                if(h==null){
-                    h = new ProxyHub();
-                    hub.set(h);
+                if(hub==null){
+                    hub = new ProxyHub();
                 }
             }
         }
-        return h;
+        return hub;
     }
 
     private final Map<String,Consumer<String>> serverReceiverMap = new ConcurrentHashMap<>();
