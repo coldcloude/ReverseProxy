@@ -48,6 +48,13 @@
     </build>
 
     <dependencies>
+
+        <dependency>
+            <groupId>os.kai</groupId>
+            <artifactId>kai-rp-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
     </dependencies>
 
 </project>
