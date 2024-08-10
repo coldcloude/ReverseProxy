@@ -1,4 +1,4 @@
-package os.kai.rp;
+package os.kai.rp.util;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -15,10 +15,14 @@ public class NettyUtil {
         return new String(req,StandardCharsets.UTF_8);
     }
 
-    public static void writeLine(ChannelHandlerContext ctx, String line){
-        byte[] req = line.getBytes(StandardCharsets.UTF_8);
-        ByteBuf msg = Unpooled.copiedBuffer(req);
+    public static void writeRaw(ChannelHandlerContext ctx, byte[] raw){
+        ByteBuf msg = Unpooled.copiedBuffer(raw);
         ctx.write(msg);
         ctx.flush();
+    }
+
+    public static void writeLine(ChannelHandlerContext ctx, String line){
+        byte[] req = (line+"\r\n").getBytes(StandardCharsets.UTF_8);
+        writeRaw(ctx,req);
     }
 }

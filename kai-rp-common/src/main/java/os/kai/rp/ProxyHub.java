@@ -2,29 +2,21 @@ package os.kai.rp;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class ProxyHub {
 
-    private static volatile ProxyHub hub = null;
+    private static final DoubleLockSingleton<ProxyHub> hub = new DoubleLockSingleton<>(ProxyHub::new);
 
     public static ProxyHub get(){
-        if(hub==null){
-            synchronized(ProxyHub.class){
-                if(hub==null){
-                    hub = new ProxyHub();
-                }
-            }
-        }
-        return hub;
+        return hub.get();
     }
 
     private final Map<String,Consumer<String>> serverReceiverMap = new ConcurrentHashMap<>();
 
     private final Map<String,Consumer<String>> clientReceiverMap = new ConcurrentHashMap<>();
 
-    public void removeClientReceiver(String sid){
+    public void unregisterClientReceiver(String sid){
         clientReceiverMap.remove(sid);
     }
 
@@ -32,7 +24,7 @@ public class ProxyHub {
         clientReceiverMap.put(sid,receiver);
     }
 
-    public void removeServerReceiver(String sid){
+    public void unregisterServerReceiver(String sid){
         serverReceiverMap.remove(sid);
     }
 

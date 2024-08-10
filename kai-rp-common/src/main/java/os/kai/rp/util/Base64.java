@@ -1,4 +1,4 @@
-package os.kai.rp;
+package os.kai.rp.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,17 +19,18 @@ public class Base64 {
     };
 
     private static final Map<Character,Integer> CODE_MAP = new HashMap<>();
+
     static {
         for(int i = 0; i<ALPHABET.length; i++){
             CODE_MAP.put(ALPHABET[i],i);
         }
     }
 
-    public static byte[] decode(String str){
+    public static byte[] decode(String str) {
         int strLen = str.length();
         //format input string
         List<Character> cs = new ArrayList<>(strLen);
-        for(int i=0; i<strLen; i++){
+        for(int i = 0; i<strLen; i++){
             char c = str.charAt(i);
             if(CODE_MAP.containsKey(c)){
                 cs.add(c);
@@ -41,7 +42,7 @@ public class Base64 {
         if(restSize>0){
             segNum++;
             strSize += restSize;
-            for(int i=0; i<restSize; i++){
+            for(int i = 0; i<restSize; i++){
                 cs.add('=');
             }
         }
@@ -56,9 +57,9 @@ public class Base64 {
         byte[] rst = new byte[rSize];
         //build
         int[] buf = new int[4];
-        for(int si=0; si<segNum; si++){
+        for(int si = 0; si<segNum; si++){
             int base = si*4;
-            for(int i=0; i<4; i++){
+            for(int i = 0; i<4; i++){
                 buf[i] = CODE_MAP.getOrDefault(cs.get(base+i),-1);
             }
             int rBase = si*3;
@@ -75,31 +76,34 @@ public class Base64 {
         return rst;
     }
 
-    public static String encode(byte[] arr){
+    public static String encode(byte[] arr,int length) {
+        length = Math.min(length,arr.length);
         StringBuilder builder = new StringBuilder();
         int[] ibuf = new int[4];
-        for(int bi = 0; bi<arr.length; bi += 3){
+        for(int bi = 0; bi<length; bi += 3){
             ibuf[0] = (((int)arr[bi])&0xFC)>>2;
             ibuf[1] = (((int)arr[bi])&0x03)<<4;
-            if(bi+1<arr.length){
+            if(bi+1<length){
                 ibuf[1] |= (((int)arr[bi+1])&0xF0)>>4;
                 ibuf[2] = (((int)arr[bi+1])&0x0F)<<2;
-                if(bi+2<arr.length){
+                if(bi+2<length){
                     ibuf[2] |= (((int)arr[bi+2])&0xC0)>>6;
                     ibuf[3] = ((int)arr[bi+2])&0x3F;
-                }
-                else {
+                }else{
                     ibuf[3] = -1;
                 }
-            }
-            else {
+            }else{
                 ibuf[2] = -1;
                 ibuf[3] = -1;
             }
-            for(int i=0; i<4; i++){
+            for(int i = 0; i<4; i++){
                 builder.append(ibuf[i]<0?'=':ALPHABET[ibuf[i]]);
             }
         }
         return builder.toString();
+    }
+
+    public static String encode(byte[] arr) {
+        return encode(arr,arr.length);
     }
 }

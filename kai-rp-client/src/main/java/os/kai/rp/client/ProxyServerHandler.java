@@ -2,8 +2,8 @@ package os.kai.rp.client;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import os.kai.rp.NettySender;
-import os.kai.rp.NettyUtil;
+import os.kai.rp.LineDataNettySender;
+import os.kai.rp.util.NettyUtil;
 import os.kai.rp.ProxyHub;
 import os.kai.rp.ProxyTag;
 
@@ -20,7 +20,7 @@ public class ProxyServerHandler extends ChannelInboundHandlerAdapter {
 
     private final Lock lock = new ReentrantLock();
 
-    private volatile NettySender sender;
+    private volatile LineDataNettySender sender;
 
     private volatile Timer timer;
 
@@ -31,7 +31,7 @@ public class ProxyServerHandler extends ChannelInboundHandlerAdapter {
         }
         @Override
         public void run() {
-            NettyUtil.writeLine(ctx,ProxyTag.KEEP_SINGLE+"\r\n");
+            NettyUtil.writeLine(ctx,ProxyTag.KEEP_SINGLE);
         }
     }
 
@@ -42,10 +42,10 @@ public class ProxyServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        NettyUtil.writeLine(ctx,ProxyTag.INIT_START+sessionId+ProxyTag.INIT_END+"\r\n");
+        NettyUtil.writeLine(ctx,ProxyTag.INIT_START+sessionId+ProxyTag.INIT_END);
         lock.lock();
         try{
-            sender = new NettySender(ctx);
+            sender = new LineDataNettySender(ctx);
             sender.start();
             ProxyHub.get().registerServerReceiver(sessionId,sender);
             timer = new Timer();
@@ -66,7 +66,7 @@ public class ProxyServerHandler extends ChannelInboundHandlerAdapter {
                 timer = null;
             }
             //stop session
-            ProxyHub.get().removeServerReceiver(sessionId);
+            ProxyHub.get().unregisterServerReceiver(sessionId);
             //stop sender
             if(sender!=null){
                 sender.shutdown();
