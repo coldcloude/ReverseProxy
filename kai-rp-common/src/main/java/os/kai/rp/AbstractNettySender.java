@@ -6,7 +6,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-public class NettySender extends Thread implements Consumer<String> {
+public abstract class AbstractNettySender extends Thread implements Consumer<String> {
 
     private final AtomicBoolean running = new AtomicBoolean(true);
 
@@ -14,9 +14,11 @@ public class NettySender extends Thread implements Consumer<String> {
 
     private final ChannelHandlerContext ctx;
 
-    public NettySender(ChannelHandlerContext ctx) {
+    public AbstractNettySender(ChannelHandlerContext ctx) {
         this.ctx = ctx;
     }
+
+    protected abstract void write(ChannelHandlerContext ctx, String data);
 
     @Override
     public void accept(String s) {
@@ -29,8 +31,7 @@ public class NettySender extends Thread implements Consumer<String> {
             Thread.interrupted();
             try{
                 String data = queue.take();
-                String str = ProxyTag.DATA_START+data+ProxyTag.DATA_END+"\r\n";
-                NettyUtil.writeLine(ctx,str);
+                write(ctx,data);
             }catch(InterruptedException e){
                 Thread.currentThread().interrupt();
             }

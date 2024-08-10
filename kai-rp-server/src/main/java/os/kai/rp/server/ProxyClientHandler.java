@@ -3,8 +3,8 @@ package os.kai.rp.server;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
-import os.kai.rp.NettySender;
-import os.kai.rp.NettyUtil;
+import os.kai.rp.LineDataNettySender;
+import os.kai.rp.util.NettyUtil;
 import os.kai.rp.ProxyHub;
 import os.kai.rp.ProxyTag;
 
@@ -39,7 +39,7 @@ public class ProxyClientHandler extends ChannelInboundHandlerAdapter {
 
     private volatile String sessionId;
 
-    private volatile NettySender sender;
+    private volatile LineDataNettySender sender;
 
     private class Ticker extends TimerTask{
         private final ChannelHandlerContext ctx;
@@ -106,7 +106,7 @@ public class ProxyClientHandler extends ChannelInboundHandlerAdapter {
                         if(s==PENDING){
                             state.set(RUNNING);
                             //start sender
-                            sender = new NettySender(ctx);
+                            sender = new LineDataNettySender(ctx);
                             sender.start();
                             //register receiver
                             ProxyHub.get().registerClientReceiver(sid,sender);
@@ -159,7 +159,7 @@ public class ProxyClientHandler extends ChannelInboundHandlerAdapter {
                     }
                     //stop session
                     if(sessionId!=null){
-                        ProxyHub.get().removeClientReceiver(sessionId);
+                        ProxyHub.get().unregisterClientReceiver(sessionId);
                         sessionId = null;
                     }
                     //stop sender
