@@ -4,15 +4,15 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import os.kai.rp.LineDataNettySender;
 import os.kai.rp.util.NettyUtil;
-import os.kai.rp.ProxyHub;
-import os.kai.rp.ProxyTag;
+import os.kai.rp.TextProxyHub;
+import os.kai.rp.TextProxyTag;
 
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class ProxyServerHandler extends ChannelInboundHandlerAdapter {
+public class TextProxyServerHandler extends ChannelInboundHandlerAdapter {
 
     private final String sessionId;
 
@@ -31,23 +31,23 @@ public class ProxyServerHandler extends ChannelInboundHandlerAdapter {
         }
         @Override
         public void run() {
-            NettyUtil.writeLine(ctx,ProxyTag.KEEP_SINGLE);
+            NettyUtil.writeLine(ctx,TextProxyTag.KEEP_SINGLE);
         }
     }
 
-    public ProxyServerHandler(String sessionId, long timeout) {
+    public TextProxyServerHandler(String sessionId,long timeout) {
         this.sessionId = sessionId;
         this.timeout = timeout;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        NettyUtil.writeLine(ctx,ProxyTag.INIT_START+sessionId+ProxyTag.INIT_END);
+        NettyUtil.writeLine(ctx,TextProxyTag.INIT_START+sessionId+TextProxyTag.INIT_END);
         lock.lock();
         try{
             sender = new LineDataNettySender(ctx);
             sender.start();
-            ProxyHub.get().registerServerReceiver(sessionId,sender);
+            TextProxyHub.get().registerServerReceiver(sessionId,sender);
             timer = new Timer();
             timer.schedule(new Ticker(ctx),timeout/3);
         }
@@ -66,7 +66,7 @@ public class ProxyServerHandler extends ChannelInboundHandlerAdapter {
                 timer = null;
             }
             //stop session
-            ProxyHub.get().unregisterServerReceiver(sessionId);
+            TextProxyHub.get().unregisterServerReceiver(sessionId);
             //stop sender
             if(sender!=null){
                 sender.shutdown();
@@ -81,9 +81,9 @@ public class ProxyServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx,Object msg) throws Exception {
         String line = NettyUtil.readLine(msg);
-        String data = ProxyTag.unpackData(line);
+        String data = TextProxyTag.unpackData(line);
         if(data!=null){
-            ProxyHub.get().sendToClient(sessionId,data);
+            TextProxyHub.get().sendToClient(sessionId,data);
         }
     }
 }

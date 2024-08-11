@@ -11,7 +11,7 @@ public class LineDataNettySender extends AbstractNettySender {
 
     @Override
     protected void write(ChannelHandlerContext ctx,String data) {
-        String str = ProxyTag.DATA_START+data+ProxyTag.DATA_END;
+        String str = TextProxyTag.DATA_START+data+TextProxyTag.DATA_END;
         NettyUtil.writeLine(ctx,str);
     }
 }

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import os.kai.rp.util.JacksonUtil;
 import os.kai.rp.NettyServer;
-import os.kai.rp.ProxyHub;
+import os.kai.rp.TextProxyHub;
 import os.kai.rp.RawChannelInitializer;
 import os.kai.rp.socks5.Socks5Constant;
 import os.kai.rp.socks5.Socks5Hub;
@@ -14,7 +14,7 @@ import os.kai.rp.socks5.Socks5RelayEntity;
 public class Socks5Server extends NettyServer {
     public Socks5Server(String host, int port){
         super(new RawChannelInitializer(Socks5ClientHandler::new),host,port);
-        ProxyHub.get().registerServerReceiver(Socks5Constant.SID,data->{
+        TextProxyHub.get().registerServerReceiver(Socks5Constant.SID,data->{
             if(data.startsWith(Socks5Constant.PREFIX_RELAY)){
                 try{
                     String json = data.substring(Socks5Constant.PREFIX_RELAY_LEN);
