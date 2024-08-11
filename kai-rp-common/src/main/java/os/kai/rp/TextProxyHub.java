@@ -1,14 +1,16 @@
 package os.kai.rp;
 
+import os.kai.rp.util.DoubleLockSingleton;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-public class ProxyHub {
+public class TextProxyHub {
 
-    private static final DoubleLockSingleton<ProxyHub> hub = new DoubleLockSingleton<>(ProxyHub::new);
+    private static final DoubleLockSingleton<TextProxyHub> hub = new DoubleLockSingleton<>(TextProxyHub::new);
 
-    public static ProxyHub get(){
+    public static TextProxyHub get(){
         return hub.get();
     }
 

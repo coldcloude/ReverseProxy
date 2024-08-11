@@ -178,7 +178,7 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
                 entity.setAddr64(Base64.encode(dstAddr.get()));
                 entity.setPort(dstPort.get());
                 String json = JacksonUtil.stringify(entity);
-                ProxyHub.get().sendToClient(Socks5Constant.SID,Socks5Constant.PREFIX_REQ+json);
+                TextProxyHub.get().sendToClient(Socks5Constant.SID,Socks5Constant.PREFIX_REQ+json);
                 state.set(S5_STATE_RELAY);
             }
         }
@@ -191,7 +191,7 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.info(formatPrefix()+"disconnect");
         Socks5Hub.get().unregisterCtx(ssid.get());
-        ProxyHub.get().sendToClient(Socks5Constant.SID,Socks5Constant.PREFIX_CLOSE+ssid.get());
+        TextProxyHub.get().sendToClient(Socks5Constant.SID,Socks5Constant.PREFIX_CLOSE+ssid.get());
     }
 
     @Override

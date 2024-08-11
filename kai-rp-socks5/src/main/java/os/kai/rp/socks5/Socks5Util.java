@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.buffer.ByteBuf;
 import os.kai.rp.util.Base64;
 import os.kai.rp.util.JacksonUtil;
-import os.kai.rp.ProxyHub;
+import os.kai.rp.TextProxyHub;
 
 public class Socks5Util {
     public static void readAndSendRelay(String ssid, ByteBuf bb, byte[] buffer) throws JsonProcessingException {
@@ -16,7 +16,7 @@ public class Socks5Util {
             entity.setSsid(ssid);
             entity.setData64(Base64.encode(buffer,len));
             String json = JacksonUtil.stringify(entity);
-            ProxyHub.get().sendToClient(Socks5Constant.SID,Socks5Constant.PREFIX_RELAY+json);
+            TextProxyHub.get().sendToClient(Socks5Constant.SID,Socks5Constant.PREFIX_RELAY+json);
         }
     }
 }

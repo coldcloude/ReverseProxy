@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
-import os.kai.rp.ProxyHub;
+import os.kai.rp.TextProxyHub;
 import os.kai.rp.socks5.Socks5Constant;
 import os.kai.rp.socks5.Socks5Hub;
 import os.kai.rp.socks5.Socks5Util;
@@ -39,7 +39,7 @@ public class Socks5ServerHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.info(formatPrefix()+"disconnect");
         Socks5Hub.get().unregisterCtx(ssid);
-        ProxyHub.get().sendToServer(Socks5Constant.SID,Socks5Constant.PREFIX_CLOSE+ssid);
+        TextProxyHub.get().sendToServer(Socks5Constant.SID,Socks5Constant.PREFIX_CLOSE+ssid);
     }
 
     @Override

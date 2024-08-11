@@ -2,9 +2,8 @@ package os.kai.rp.socks5;
 
 import io.netty.channel.ChannelHandlerContext;
 import lombok.AllArgsConstructor;
-import os.kai.rp.ProxyHub;
 import os.kai.rp.RawBase64NettySender;
-import os.kai.rp.DoubleLockSingleton;
+import os.kai.rp.util.DoubleLockSingleton;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

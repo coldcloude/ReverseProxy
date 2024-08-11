@@ -26,53 +26,87 @@ public class Base64 {
         }
     }
 
-    public static byte[] decode(String str) {
-        int strLen = str.length();
-        //format input string
-        List<Character> cs = new ArrayList<>(strLen);
-        for(int i = 0; i<strLen; i++){
-            char c = str.charAt(i);
-            if(CODE_MAP.containsKey(c)){
-                cs.add(c);
+    private static class DecodeContext{
+        private List<Character> charList;
+        private int size;
+        private int segNum;
+        private void input(String str){
+            //format input string
+            int strLen = str.length();
+            charList = new ArrayList<>(strLen);
+            for(int i = 0; i<strLen; i++){
+                char c = str.charAt(i);
+                if(CODE_MAP.containsKey(c)){
+                    charList.add(c);
+                }
             }
-        }
-        int strSize = cs.size();
-        int segNum = strSize/4;
-        int restSize = 4-(strSize-segNum*4);
-        if(restSize>0){
-            segNum++;
-            strSize += restSize;
-            for(int i = 0; i<restSize; i++){
-                cs.add('=');
+            //calculate seg num
+            int strSize = charList.size();
+            segNum = strSize/4;
+            int restSize = 4-(strSize-segNum*4);
+            if(restSize>0){
+                segNum++;
+                strSize += restSize;
+                for(int i = 0; i<restSize; i++){
+                    charList.add('=');
+                }
             }
-        }
-        //calculate return size
-        int rSize = segNum*3;
-        if(cs.get(strSize-1)=='='){
-            rSize--;
-            if(cs.get(strSize-2)=='='){
-                rSize--;
-            }
-        }
-        byte[] rst = new byte[rSize];
-        //build
-        int[] buf = new int[4];
-        for(int si = 0; si<segNum; si++){
-            int base = si*4;
-            for(int i = 0; i<4; i++){
-                buf[i] = CODE_MAP.getOrDefault(cs.get(base+i),-1);
-            }
-            int rBase = si*3;
-            if(buf[0]>=0&&buf[1]>=0){
-                rst[rBase] = (byte)(((buf[0]&0x3F)<<2)|((buf[1]&0x30)>>4));
-                if(buf[2]>=0){
-                    rst[rBase+1] = (byte)(((buf[1]&0x0F)<<4)|((buf[2]&0x3C)>>2));
-                    if(buf[3]>=0){
-                        rst[rBase+2] = (byte)(((buf[2]&0x03)<<6)|(buf[3]&0x3F));
-                    }
+            //calculate return size
+            size = segNum*3;
+            if(charList.get(strSize-1)=='='){
+                size--;
+                if(charList.get(strSize-2)=='='){
+                    size--;
                 }
             }
         }
+        private int decode(byte[] rst){
+            //calculate output size
+            int oSize = this.size;
+            int oSegNum = this.segNum;
+            int maxSize = rst.length;
+            if(maxSize<oSize){
+                int maxSegNum = maxSize/3;
+                int restMaxLen = maxSize-maxSegNum*3;
+                if(restMaxLen>0){
+                    maxSegNum++;
+                }
+                oSize = maxSize;
+                oSegNum = maxSegNum;
+            }
+            //build
+            int[] buf = new int[4];
+            for(int si = 0; si<oSegNum; si++){
+                int charBase = si*4;
+                for(int i = 0; i<4; i++){
+                    buf[i] = CODE_MAP.getOrDefault(charList.get(charBase+i),-1);
+                }
+                int base = si*3;
+                if(buf[0]>=0&&buf[1]>=0&&base<oSize){
+                    rst[base] = (byte)(((buf[0]&0x3F)<<2)|((buf[1]&0x30)>>4));
+                    if(buf[2]>=0&&base+1<oSize){
+                        rst[base+1] = (byte)(((buf[1]&0x0F)<<4)|((buf[2]&0x3C)>>2));
+                        if(buf[3]>=0&&base+2<oSize){
+                            rst[base+2] = (byte)(((buf[2]&0x03)<<6)|(buf[3]&0x3F));
+                        }
+                    }
+                }
+            }
+            return oSize;
+        }
+    }
+
+    public static int decode(String str, byte[] buf) {
+        DecodeContext ctx = new DecodeContext();
+        ctx.input(str);
+        return ctx.decode(buf);
+    }
+
+    public static byte[] decode(String str){
+        DecodeContext ctx = new DecodeContext();
+        ctx.input(str);
+        byte[] rst = new byte[ctx.size];
+        ctx.decode(rst);
         return rst;
     }
 
