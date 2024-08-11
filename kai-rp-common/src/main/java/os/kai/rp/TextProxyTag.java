@@ -1,6 +1,6 @@
 package os.kai.rp;
 
-public class ProxyTag {
+public class TextProxyTag {
     private static final String INIT = "INIT";
     private static final String KEEP = "KEEP";
     private static final String DATA = "DATA";

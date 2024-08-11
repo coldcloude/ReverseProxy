@@ -2,11 +2,9 @@ package os.kai.rp.socks5.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.channel.ChannelFuture;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import lombok.extern.slf4j.Slf4j;
-import os.kai.rp.DoubleLockSingleton;
-import os.kai.rp.ProxyHub;
+import os.kai.rp.util.DoubleLockSingleton;
+import os.kai.rp.TextProxyHub;
 import os.kai.rp.socks5.Socks5Constant;
 import os.kai.rp.socks5.Socks5Hub;
 import os.kai.rp.socks5.Socks5RelayEntity;
@@ -29,7 +27,7 @@ public class Socks5ClientGroup {
     }
     private final Map<String,Socks5Client> clientMap = new ConcurrentHashMap<>();
     public void start(){
-        ProxyHub.get().registerClientReceiver(Socks5Constant.SID,data->{
+        TextProxyHub.get().registerClientReceiver(Socks5Constant.SID,data->{
             if(data.startsWith(Socks5Constant.PREFIX_REQ)){
                 String json = data.substring(Socks5Constant.PREFIX_REQ_LEN);
                 try{
@@ -65,7 +63,7 @@ public class Socks5ClientGroup {
                         });
                     } catch (UnknownHostException|InvalidAddressException e) {
                         log.warn("ssid="+ssid+", json="+json+": ",e);
-                        ProxyHub.get().sendToServer(Socks5Constant.SID,Socks5Constant.PREFIX_CLOSE+ssid);
+                        TextProxyHub.get().sendToServer(Socks5Constant.SID,Socks5Constant.PREFIX_CLOSE+ssid);
                     }
                 }
                 catch(JsonProcessingException e){

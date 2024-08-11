@@ -2,9 +2,9 @@ package os.kai.rp.socks5;
 
 public class Socks5Constant {
     public static final String SID = "socks5";
-    public static final String PREFIX_REQ = "request:";
-    public static final String PREFIX_RELAY = "relay:";
-    public static final String PREFIX_CLOSE = "close:";
+    public static final String PREFIX_REQ = "socks5.request:";
+    public static final String PREFIX_RELAY = "socks5.relay:";
+    public static final String PREFIX_CLOSE = "socks5.close:";
     public static final int PREFIX_REQ_LEN = PREFIX_REQ.length();
     public static final int PREFIX_RELAY_LEN = PREFIX_RELAY.length();
     public static final int PREFIX_CLOSE_LEN = PREFIX_CLOSE.length();

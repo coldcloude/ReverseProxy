@@ -1,6 +1,6 @@
 package os.kai.rp.server;
 
-import os.kai.rp.ProxyHub;
+import os.kai.rp.TextProxyHub;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -10,7 +10,7 @@ import java.util.Set;
 public class TestServer {
     public static void main(String[] args) throws Exception {
         new Thread(()->{
-            ProxyServer server = new ProxyServer("0.0.0.0",13355,30000L);
+            TextProxyServer server = new TextProxyServer("0.0.0.0",13355,30000L);
             server.start();
         }).start();
         Set<String> sidSet = new HashSet<>();
@@ -23,9 +23,9 @@ public class TestServer {
                     String data = line.substring(space+1);
                     if(!sidSet.contains(sid)){
                         sidSet.add(sid);
-                        ProxyHub.get().registerServerReceiver(sid,System.out::println);
+                        TextProxyHub.get().registerServerReceiver(sid,System.out::println);
                     }
-                    ProxyHub.get().sendToClient(sid,data);
+                    TextProxyHub.get().sendToClient(sid,data);
                 }
             }
         }
