@@ -3,8 +3,7 @@ package os.kai.rp.http.server;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import os.kai.rp.http.HttpInputContext;
-import os.kai.rp.util.Base64;
+import os.kai.rp.util.IOUtil;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -12,7 +11,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,18 +42,12 @@ public class TestServer {
                 String path = uri.getPath().substring(1);
                 if("POST".equals(method)){
                     List<byte[]> rst = new LinkedList<>();
-                    HttpInputContext inctx = new HttpInputContext(ins,12);
-                    boolean finished = false;
-                    while(!finished){
-                        finished = inctx.read();
-                        //print
-                        String b64 = Base64.encode(inctx.buf(),inctx.len());
-                        System.err.println(b64);
-                        //save
-                        byte[] r = new byte[inctx.len()];
-                        System.arraycopy(inctx.buf(),0,r,0,inctx.len());
+                    byte[] rbs = new byte[12];
+                    IOUtil.readAll(ins,(bs,l)->{
+                        byte[] r = new byte[l];
+                        System.arraycopy(bs,0,r,0,l);
                         rst.add(r);
-                    }
+                    },rbs);
                     int size = 0;
                     for(byte[] r : rst){
                         size += r.length;
@@ -104,7 +96,7 @@ public class TestServer {
         for(String name : pwd.list()){
             System.err.println(name);
         }
-        HttpProxyServer server = new HttpProxyServer("0.0.0.0",13355,new TestHandler());
-        server.start();
+        HttpServer server = new HttpServer("0.0.0.0",24466,new TestHandler());
+        server.startSync();
     }
 }

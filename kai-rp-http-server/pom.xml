@@ -51,6 +51,12 @@
 
         <dependency>
             <groupId>os.kai</groupId>
+            <artifactId>kai-rp-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>os.kai</groupId>
             <artifactId>kai-rp-http-common</artifactId>
             <version>${project.version}</version>
         </dependency>
