@@ -43,20 +43,22 @@ public class Base64 {
             //calculate seg num
             int strSize = charList.size();
             segNum = strSize/4;
-            int restSize = 4-(strSize-segNum*4);
+            int restSize = strSize-segNum*4;
             if(restSize>0){
                 segNum++;
-                strSize += restSize;
-                for(int i = 0; i<restSize; i++){
+                strSize += 4-restSize;
+                for(int i = 0; i<4-restSize; i++){
                     charList.add('=');
                 }
             }
             //calculate return size
             size = segNum*3;
-            if(charList.get(strSize-1)=='='){
-                size--;
-                if(charList.get(strSize-2)=='='){
+            if(size>0){
+                if(charList.get(strSize-1)=='='){
                     size--;
+                    if(charList.get(strSize-2)=='='){
+                        size--;
+                    }
                 }
             }
         }
