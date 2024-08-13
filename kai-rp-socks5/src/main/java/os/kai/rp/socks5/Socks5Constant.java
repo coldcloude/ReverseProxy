@@ -12,6 +12,4 @@ public class Socks5Constant {
     public static final int ATYP_IPV4 = 0x01;
     public static final int ATYP_IPV6 = 0x04;
     public static final int ATYP_DOMAIN = 0x03;
-    public static final int SERVER_TO_CLIENT = 1;
-    public static final int CLIENT_TO_SERVER = -1;
 }

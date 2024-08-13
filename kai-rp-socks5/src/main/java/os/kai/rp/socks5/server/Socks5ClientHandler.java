@@ -203,7 +203,7 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
             }
         }
         else if(s==S5_STATE_RELAY){
-            Socks5Util.readAndSendRelay(ssid,bb,buffer,Socks5Constant.SERVER_TO_CLIENT);
+            Socks5Util.readAndSendRelayToClient(ssid,bb,buffer);
         }
         bb.release();
     }
