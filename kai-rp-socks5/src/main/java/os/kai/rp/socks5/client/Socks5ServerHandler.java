@@ -32,7 +32,9 @@ public class Socks5ServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx,Object msg) throws Exception {
-        Socks5Util.readAndSendRelay(ssid,(ByteBuf)msg,buffer);
+        ByteBuf bb = (ByteBuf)msg;
+        Socks5Util.readAndSendRelay(ssid,bb,buffer);
+        bb.release();
     }
 
     @Override

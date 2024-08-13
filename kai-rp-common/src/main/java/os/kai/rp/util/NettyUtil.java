@@ -12,7 +12,9 @@ public class NettyUtil {
         ByteBuf buf = (ByteBuf) msg;
         byte[] req = new byte[buf.readableBytes()];
         buf.readBytes(req);
-        return new String(req,StandardCharsets.UTF_8);
+        String r = new String(req,StandardCharsets.UTF_8);
+        buf.release();
+        return r;
     }
 
     public static void writeRaw(ChannelHandlerContext ctx, byte[] raw){

@@ -162,16 +162,17 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx,Object msg) throws Exception {
+        ByteBuf bb = (ByteBuf)msg;
         int s = state.get();
         if(s==S5_STATE_NEG){
-            boolean finished = negReader.read((ByteBuf)msg);
+            boolean finished = negReader.read(bb);
             if(finished){
                 NettyUtil.writeRaw(ctx,NEG_NO_AUTH);
                 state.set(S5_STATE_REQ);
             }
         }
         else if(s==S5_STATE_REQ){
-            boolean finished = reqReader.read((ByteBuf)msg);
+            boolean finished = reqReader.read(bb);
             if(finished){
                 NettyUtil.writeRaw(ctx,REQ_LOCAL);
                 Socks5RequestEntity entity = new Socks5RequestEntity();
@@ -185,8 +186,9 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
             }
         }
         else if(s==S5_STATE_RELAY){
-            Socks5Util.readAndSendRelay(ssid.get(),(ByteBuf)msg,buffer);
+            Socks5Util.readAndSendRelay(ssid.get(),bb,buffer);
         }
+        bb.release();
     }
 
     @Override
