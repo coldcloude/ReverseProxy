@@ -3,10 +3,16 @@ package os.kai.rp;
 import io.netty.channel.ChannelHandlerContext;
 import os.kai.rp.util.NettyUtil;
 
+import java.util.concurrent.LinkedBlockingQueue;
+
 public class LineDataNettySender extends AbstractNettySender {
 
     public LineDataNettySender(ChannelHandlerContext ctx) {
         super(ctx);
+    }
+
+    public LineDataNettySender(ChannelHandlerContext ctx, LinkedBlockingQueue<String> queue) {
+        super(ctx,queue);
     }
 
     @Override

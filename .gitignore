@@ -6,3 +6,4 @@ logs
 *.jar
 *.zip
 draft
+*.pcap

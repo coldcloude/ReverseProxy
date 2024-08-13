@@ -11,7 +11,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Socks5RequestEntity {
     private String ssid;
-    private int addrType;
-    private String addr64;
+    private String addr;
     private int port;
 }

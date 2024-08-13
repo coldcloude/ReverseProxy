@@ -120,16 +120,18 @@ public class HttpProxyClientSession {
                 Response response = null;
                 boolean error = false;
                 while(!error){
-                    try{
-                        response = listener.get(timeout,TimeUnit.MILLISECONDS);
-                        break;
-                    }
-                    catch(InterruptedException e){
-                        //Thread.currentThread().interrupt();
-                    }
-                    catch(TimeoutException|ExecutionException e){
-                        log.warn(logPrefix,e);
-                        error = true;
+                    if(!Thread.interrupted()){
+                        try{
+                            response = listener.get(timeout,TimeUnit.MILLISECONDS);
+                            break;
+                        }
+                        catch(InterruptedException e){
+                            Thread.currentThread().interrupt();
+                        }
+                        catch(TimeoutException|ExecutionException e){
+                            log.warn(logPrefix,e);
+                            error = true;
+                        }
                     }
                 }
                 try{
