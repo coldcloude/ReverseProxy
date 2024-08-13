@@ -20,16 +20,16 @@ public class Socks5ProxyServer {
         proxyThread.join();
     }
     public static void main(String[] args) throws Exception{
-//        String host = args[0];
-//        int port = Integer.parseInt(args[1]);
-//        String proxyHost = args[2];
-//        int proxyPort = Integer.parseInt(args[3]);
-//        long timeout = Long.parseLong(args[4]);
-        String host = "127.0.0.1";
-        int port = 24466;
-        String proxyHost = "127.0.0.1";
-        int proxyPort = 13355;
-        long timeout = 30000L;
+        String host = args[0];
+        int port = Integer.parseInt(args[1]);
+        String proxyHost = args[2];
+        int proxyPort = Integer.parseInt(args[3]);
+        long timeout = Long.parseLong(args[4]);
+//        String host = "127.0.0.1";
+//        int port = 24466;
+//        String proxyHost = "127.0.0.1";
+//        int proxyPort = 13355;
+//        long timeout = 30000L;
         Socks5ProxyServer server = new Socks5ProxyServer(host,port,proxyHost,proxyPort,timeout);
         server.start();
     }
