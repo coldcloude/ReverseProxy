@@ -25,7 +25,7 @@ public class Socks5Server extends NettyServer {
         }
         else if(data.startsWith(Socks5Constant.PREFIX_CLOSE)){
             String ssid = data.substring(Socks5Constant.PREFIX_CLOSE_LEN);
-            Socks5Hub.get().close(ssid);
+            Socks5Hub.get().close(ssid,true);
         }
     }
     public Socks5Server(String host, int port){

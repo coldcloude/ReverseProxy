@@ -34,18 +34,19 @@ public class NettyClient {
     public void startWithRetry(int maxRetry, long interval){
         int retry = Math.max(0,maxRetry);
         while(retry>=0){
-            Thread.interrupted();
-            try{
-                ChannelFuture cf = startAsync();
-                cf.channel().closeFuture().sync();
-                log.info("connection closed, retry...");
-                if(maxRetry>=0){
-                    retry--;
+            if(!Thread.interrupted()){
+                try{
+                    ChannelFuture cf = startAsync();
+                    cf.channel().closeFuture().sync();
+                    log.info("connection closed, retry...");
+                    if(maxRetry>=0){
+                        retry--;
+                    }
+                    Thread.sleep(interval);
                 }
-                Thread.sleep(interval);
-            }
-            catch(InterruptedException e){
-                Thread.currentThread().interrupt();
+                catch(InterruptedException e){
+                    Thread.currentThread().interrupt();
+                }
             }
         }
     }

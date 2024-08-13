@@ -4,10 +4,16 @@ import io.netty.channel.ChannelHandlerContext;
 import os.kai.rp.util.Base64;
 import os.kai.rp.util.NettyUtil;
 
+import java.util.concurrent.LinkedBlockingQueue;
+
 public class RawBase64NettySender extends AbstractNettySender {
 
     public RawBase64NettySender(ChannelHandlerContext ctx) {
         super(ctx);
+    }
+
+    public RawBase64NettySender(ChannelHandlerContext ctx, LinkedBlockingQueue<String> queue) {
+        super(ctx,queue);
     }
 
     @Override

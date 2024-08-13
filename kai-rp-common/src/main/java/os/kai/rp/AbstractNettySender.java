@@ -10,12 +10,17 @@ public abstract class AbstractNettySender extends Thread implements Consumer<Str
 
     private final AtomicBoolean running = new AtomicBoolean(true);
 
-    private final LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<String> queue;
 
     private final ChannelHandlerContext ctx;
 
-    public AbstractNettySender(ChannelHandlerContext ctx) {
+    public AbstractNettySender(ChannelHandlerContext ctx, LinkedBlockingQueue<String> queue) {
         this.ctx = ctx;
+        this.queue = queue;
+    }
+
+    public AbstractNettySender(ChannelHandlerContext ctx) {
+        this(ctx,new LinkedBlockingQueue<>());
     }
 
     protected abstract void write(ChannelHandlerContext ctx, String data);
@@ -28,12 +33,13 @@ public abstract class AbstractNettySender extends Thread implements Consumer<Str
     @Override
     public void run() {
         while(running.get()){
-            Thread.interrupted();
-            try{
-                String data = queue.take();
-                write(ctx,data);
-            }catch(InterruptedException e){
-                Thread.currentThread().interrupt();
+            if(!Thread.interrupted()){
+                try{
+                    String data = queue.take();
+                    write(ctx,data);
+                }catch(InterruptedException e){
+                    Thread.currentThread().interrupt();
+                }
             }
         }
     }

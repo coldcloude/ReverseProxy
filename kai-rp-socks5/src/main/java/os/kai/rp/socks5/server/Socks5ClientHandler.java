@@ -8,16 +8,20 @@ import os.kai.rp.*;
 import os.kai.rp.socks5.*;
 import os.kai.rp.socks5.common.FieldsReader;
 import os.kai.rp.socks5.common.InvalidFieldException;
-import os.kai.rp.util.Base64;
 import os.kai.rp.util.JacksonUtil;
 import os.kai.rp.util.NettyUtil;
 
-import java.nio.charset.StandardCharsets;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
+
+    private static final AtomicLong gsn = new AtomicLong(0);
 
     private static final int S5_STATE_NEG = 1;
     private static final int S5_STATE_REQ = 2;
@@ -29,9 +33,11 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
     private final FieldsReader negReader = new FieldsReader();
     private final FieldsReader reqReader = new FieldsReader();
 
-    private final AtomicReference<String> ssid = new AtomicReference<>();
-    private final AtomicInteger dstAddrType = new AtomicInteger();
-    private final AtomicReference<byte[]> dstAddr = new AtomicReference<>();
+    private final AtomicReference<String> logPrefix;
+
+    private final String ssid;
+
+    private final AtomicReference<String> dstAddr = new AtomicReference<>();
     private final AtomicInteger dstPort = new AtomicInteger();
 
     private final byte[] buffer = new byte[Socks5Constant.BUF_LEN];
@@ -52,7 +58,7 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
      *   +----+--------+
      */
 
-    /**
+    /*
      *   socks5 client request
      *   +----+-----+-------+------+----------+----------+
      *   |VER | CMD |  RSV  | ATYP | DST.ADDR | DST.PORT |
@@ -111,16 +117,12 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
                     reqReader.addFixedLengthProcessor(4,(nbs,nlen)->{
                         byte[] ipv4 = new byte[4];
                         System.arraycopy(nbs,0,ipv4,0,4);
-                        dstAddr.set(ipv4);
-                    });
-                    break;
-                case Socks5Constant.ATYP_DOMAIN:
-                    //req addr domain
-                    reqReader.addVariableLengthProcessor((nbs,nlen)->{
-                        byte[] domain = new byte[nlen];
-                        System.arraycopy(nbs,0,domain,0,nlen);
-                        domain = new String(domain).getBytes(StandardCharsets.UTF_8);
-                        dstAddr.set(domain);
+                        try{
+                            String addr = Inet4Address.getByAddress(ipv4).getHostAddress();
+                            dstAddr.set(addr);
+                        }catch(UnknownHostException e){
+                            throw new InvalidFieldException(e);
+                        }
                     });
                     break;
                 case Socks5Constant.ATYP_IPV6:
@@ -128,14 +130,25 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
                     reqReader.addFixedLengthProcessor(16,(nbs,nlen)->{
                         byte[] ipv6 = new byte[16];
                         System.arraycopy(nbs,0,ipv6,0,16);
-                        dstAddr.set(ipv6);
+                        try{
+                            String addr = Inet6Address.getByAddress(ipv6).getHostAddress();
+                            dstAddr.set(addr);
+                        }catch(UnknownHostException e){
+                            throw new InvalidFieldException(e);
+                        }
+                    });
+                    break;
+                case Socks5Constant.ATYP_DOMAIN:
+                    //req addr domain
+                    reqReader.addVariableLengthProcessor((nbs,nlen)->{
+                        byte[] domain = new byte[nlen];
+                        System.arraycopy(nbs,0,domain,0,nlen);
+                        dstAddr.set(new String(domain));
                     });
                     break;
                 default:
                     throw new InvalidFieldException("unknown addr type: "+type);
             }
-            //req atyp
-            dstAddrType.set(type);
             //req port
             reqReader.addFixedLengthProcessor(2,(nbs,nlen)->{
                 int port = 0;
@@ -144,20 +157,22 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
                 dstPort.set(port);
             });
         });
+        ssid = System.currentTimeMillis()+"-"+gsn.getAndIncrement();
+        logPrefix = new AtomicReference<>("ssid="+ssid);
     }
 
     private final AtomicInteger state = new AtomicInteger();
 
     private String formatPrefix(){
-        return "ssid="+ssid.get()+", state="+state.get()+": ";
+        return logPrefix.get()+", state="+state.get()+": ";
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        String id = ctx.channel().id().asLongText();
-        ssid.set(id);
+        log.info(formatPrefix()+"connected");
         state.set(S5_STATE_NEG);
-        Socks5Hub.get().registerCtx(id,ctx);
+        Socks5Hub.get().register(ssid);
+        Socks5Hub.get().connect(ssid,ctx);
     }
 
     @Override
@@ -169,6 +184,7 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
             if(finished){
                 NettyUtil.writeRaw(ctx,NEG_NO_AUTH);
                 state.set(S5_STATE_REQ);
+                log.info(formatPrefix()+"negotiation replied");
             }
         }
         else if(s==S5_STATE_REQ){
@@ -176,26 +192,27 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
             if(finished){
                 NettyUtil.writeRaw(ctx,REQ_LOCAL);
                 Socks5RequestEntity entity = new Socks5RequestEntity();
-                entity.setSsid(ssid.get());
-                entity.setAddrType(dstAddrType.get());
-                entity.setAddr64(Base64.encode(dstAddr.get()));
+                entity.setSsid(ssid);
+                entity.setAddr(dstAddr.get());
                 entity.setPort(dstPort.get());
                 String json = JacksonUtil.stringify(entity);
                 TextProxyHub.get().sendToClient(Socks5Constant.SID,Socks5Constant.PREFIX_REQ+json);
                 state.set(S5_STATE_RELAY);
+                logPrefix.set(logPrefix.get()+", addr="+dstAddr.get()+", port="+dstPort.get());
+                log.info(formatPrefix()+"request replied and sent");
             }
         }
         else if(s==S5_STATE_RELAY){
-            Socks5Util.readAndSendRelay(ssid.get(),bb,buffer);
+            Socks5Util.readAndSendRelay(ssid,bb,buffer,Socks5Constant.SERVER_TO_CLIENT);
         }
         bb.release();
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.info(formatPrefix()+"disconnect");
-        Socks5Hub.get().unregisterCtx(ssid.get());
-        TextProxyHub.get().sendToClient(Socks5Constant.SID,Socks5Constant.PREFIX_CLOSE+ssid.get());
+        log.info(formatPrefix()+"disconnected");
+        Socks5Hub.get().close(ssid,false);
+        TextProxyHub.get().sendToClient(Socks5Constant.SID,Socks5Constant.PREFIX_CLOSE+ssid);
     }
 
     @Override
