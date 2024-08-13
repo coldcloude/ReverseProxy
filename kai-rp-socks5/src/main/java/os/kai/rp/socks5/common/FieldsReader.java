@@ -1,4 +1,4 @@
-package os.kai.rp.socks5.server;
+package os.kai.rp.socks5.common;
 
 import io.netty.buffer.ByteBuf;
 
