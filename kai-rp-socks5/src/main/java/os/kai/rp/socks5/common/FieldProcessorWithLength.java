@@ -1,8 +1,7 @@
-package os.kai.rp.socks5.server;
+package os.kai.rp.socks5.common;
 
 import lombok.Getter;
 import lombok.Setter;
-import os.kai.rp.UnsafeConsumer;
 
 public class FieldProcessorWithLength implements FieldProcessor{
 

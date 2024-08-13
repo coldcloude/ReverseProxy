@@ -6,6 +6,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
 import os.kai.rp.*;
 import os.kai.rp.socks5.*;
+import os.kai.rp.socks5.common.FieldsReader;
+import os.kai.rp.socks5.common.InvalidFieldException;
 import os.kai.rp.util.Base64;
 import os.kai.rp.util.JacksonUtil;
 import os.kai.rp.util.NettyUtil;
