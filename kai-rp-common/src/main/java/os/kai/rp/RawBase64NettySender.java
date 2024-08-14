@@ -8,17 +8,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class RawBase64NettySender extends AbstractNettySender<String> {
 
-    public RawBase64NettySender(ChannelHandlerContext ctx) {
-        super(ctx);
+    public RawBase64NettySender(ChannelHandlerContext ctx, int bufLen) {
+        super(ctx,bufLen);
     }
 
-    public RawBase64NettySender(ChannelHandlerContext ctx, LinkedBlockingQueue<String> queue) {
-        super(ctx,queue);
+    public RawBase64NettySender(ChannelHandlerContext ctx, int bufLen, LinkedBlockingQueue<String> queue) {
+        super(ctx,bufLen,queue);
     }
 
     @Override
-    protected void write(ChannelHandlerContext ctx,String data) {
-        byte[] bytes = Base64.decode(data);
-        NettyUtil.writeRaw(ctx,bytes);
+    protected void write(ChannelHandlerContext ctx,String data,byte[] buffer){
+        Base64.decode(data,buffer,(bs,len)->NettyUtil.writeRaw(ctx,bs,0,len));
     }
 }

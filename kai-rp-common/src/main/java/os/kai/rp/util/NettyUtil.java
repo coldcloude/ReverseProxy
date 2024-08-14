@@ -2,6 +2,7 @@ package os.kai.rp.util;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.nio.charset.StandardCharsets;
@@ -18,8 +19,14 @@ public class NettyUtil {
     }
 
     public static void writeRaw(ChannelHandlerContext ctx, byte[] raw){
-        ByteBuf msg = Unpooled.copiedBuffer(raw);
-        ctx.write(msg);
+        ByteBuf msg = Unpooled.wrappedBuffer(raw);
+        ctx.write(msg).awaitUninterruptibly();
+        ctx.flush();
+    }
+
+    public static void writeRaw(ChannelHandlerContext ctx, byte[] raw, int offset, int len){
+        ByteBuf msg = Unpooled.wrappedBuffer(raw,offset,len);
+        ctx.write(msg).awaitUninterruptibly();
         ctx.flush();
     }
 

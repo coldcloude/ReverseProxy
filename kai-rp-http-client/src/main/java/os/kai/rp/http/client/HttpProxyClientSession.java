@@ -8,6 +8,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import os.kai.rp.TextProxyHub;
 import os.kai.rp.http.HttpConstant;
@@ -35,7 +36,6 @@ public class HttpProxyClientSession {
     private final String sessionId;
     private final long timeout;
     private final HttpClient client;
-    private final ConcurrentLinkedQueue<byte[]> bufferPool = new ConcurrentLinkedQueue<>();
     private final Map<String,Timer> timerMap = new ConcurrentHashMap<>();
     private final Map<String,Consumer<HttpPayloadEntity>> payloadHandlerMap = new ConcurrentHashMap<>();
     private final Map<String,Runnable> closeHandlerMap = new ConcurrentHashMap<>();
@@ -87,92 +87,85 @@ public class HttpProxyClientSession {
     private void processRequest(HttpRequestEntity req){
         String hsid = req.getHsid();
         String logPrefix = "request hsid="+hsid+": ";
-        byte[] buf = bufferPool.poll();
-        byte[] buffer = buf==null?new byte[HttpConstant.BUF_LEN]:buf;
-        try{
-            //handle timeout
-            addTimeoutTimer(hsid);
-            //set request header
-            Request request = client.newRequest(schema+"://"+host+":"+port+req.getPath());
-            String method = req.getMethod();
-            request.method(method);
-            for(Map.Entry<String,String> header : req.getHeaders().entrySet()){
-                String name = header.getKey();
-                String value = header.getValue();
-                if(name.equals(HttpHeader.HOST.asString())){
-                    request.header(name,host+":"+port);
-                }
-                else {
-                    request.header(name,value);
+        //handle timeout
+        addTimeoutTimer(hsid);
+        //set request header
+        Request request = client.newRequest(schema+"://"+host+":"+port+req.getPath());
+        String method = req.getMethod();
+        request.method(method);
+        for(Map.Entry<String,String> header : req.getHeaders().entrySet()){
+            String name = header.getKey();
+            String value = header.getValue();
+            if(name.equals(HttpHeader.HOST.asString())){
+                request.header(name,host+":"+port);
+            }
+            else {
+                request.header(name,value);
+            }
+        }
+        //set content
+        if(HttpMethod.POST.asString().equals(method)){
+            request.content(new HttpProxyBase64ContentProvider(req.getLength()),req.getType());
+            HttpProxyBase64ContentProvider provider = (HttpProxyBase64ContentProvider)request.getContent();
+            onPayload(hsid,payload->provider.provide(payload.getData64()));
+            onClose(hsid,provider::finish);
+        }
+        //async send
+        EXECUTOR.execute(()->{
+            InputStreamResponseListener listener = new InputStreamResponseListener();
+            request.send(listener);
+            Response response = null;
+            boolean error = false;
+            while(!error){
+                if(!Thread.interrupted()){
+                    try{
+                        response = listener.get(timeout,TimeUnit.MILLISECONDS);
+                        break;
+                    }
+                    catch(InterruptedException e){
+                        Thread.currentThread().interrupt();
+                    }
+                    catch(TimeoutException|ExecutionException e){
+                        log.warn(logPrefix,e);
+                        error = true;
+                    }
                 }
             }
-            //set content
-            boolean withBody = "POST".equals(method);
-            if(withBody){
-                request.content(new HttpProxyBase64ContentProvider(req.getLength(),buffer),req.getType());
-                HttpProxyBase64ContentProvider provider = (HttpProxyBase64ContentProvider)request.getContent();
-                onPayload(hsid,payload->provider.provide(payload.getData64()));
-                onClose(hsid,provider::finish);
+            try{
+                if(error){
+                    HttpResponseEntity res = new HttpResponseEntity();
+                    res.setHsid(hsid);
+                    res.setStatus(500);
+                    sendResponse(res);
+                    sendClose(hsid);
+                }
+                else if(response!=null){
+                    HttpResponseEntity res = new HttpResponseEntity();
+                    res.setHsid(hsid);
+                    res.setStatus(response.getStatus());
+                    for(HttpField header : response.getHeaders()){
+                        res.getHeaders().put(header.getName(),header.getValue());
+                    }
+                    sendResponse(res);
+                    try(InputStream ins = listener.getInputStream()){
+                        byte[] buffer = new byte[HttpConstant.BUF_LEN];
+                        IOUtil.readAll(ins,(bs,l)->{
+                            HttpPayloadEntity payload = new HttpPayloadEntity();
+                            payload.setHsid(hsid);
+                            payload.setData64(Base64.encode(bs,l));
+                            sendPayload(payload);
+                        },buffer);
+                    }
+                    catch(IOException e){
+                        log.warn(logPrefix,e);
+                    }
+                    sendClose(hsid);
+                }
             }
-            //async send
-            EXECUTOR.execute(()->{
-                InputStreamResponseListener listener = new InputStreamResponseListener();
-                request.send(listener);
-                Response response = null;
-                boolean error = false;
-                while(!error){
-                    if(!Thread.interrupted()){
-                        try{
-                            response = listener.get(timeout,TimeUnit.MILLISECONDS);
-                            break;
-                        }
-                        catch(InterruptedException e){
-                            Thread.currentThread().interrupt();
-                        }
-                        catch(TimeoutException|ExecutionException e){
-                            log.warn(logPrefix,e);
-                            error = true;
-                        }
-                    }
-                }
-                try{
-                    if(error){
-                        HttpResponseEntity res = new HttpResponseEntity();
-                        res.setHsid(hsid);
-                        res.setStatus(500);
-                        sendResponse(res);
-                        sendClose(hsid);
-                    }
-                    else if(response!=null){
-                        HttpResponseEntity res = new HttpResponseEntity();
-                        res.setHsid(hsid);
-                        res.setStatus(response.getStatus());
-                        for(HttpField header : response.getHeaders()){
-                            res.getHeaders().put(header.getName(),header.getValue());
-                        }
-                        sendResponse(res);
-                        try(InputStream ins = listener.getInputStream()){
-                            IOUtil.readAll(ins,(bs,l)->{
-                                HttpPayloadEntity payload = new HttpPayloadEntity();
-                                payload.setHsid(hsid);
-                                payload.setData64(Base64.encode(bs,l));
-                                sendPayload(payload);
-                            },buffer);
-                        }
-                        catch(IOException e){
-                            log.warn(logPrefix,e);
-                        }
-                        sendClose(hsid);
-                    }
-                }
-                catch(JsonProcessingException e){
-                    log.warn(logPrefix,e);
-                }
-            });
-        }
-        finally{
-            bufferPool.offer(buffer);
-        }
+            catch(JsonProcessingException e){
+                log.warn(logPrefix,e);
+            }
+        });
     }
     private void sendResponse(HttpResponseEntity entity) throws JsonProcessingException {
         String json = JacksonUtil.stringify(entity);

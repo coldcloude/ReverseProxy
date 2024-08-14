@@ -1,12 +1,13 @@
 package os.kai.rp.http.server;
 
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import os.kai.rp.Base64AsyncProvider;
 import os.kai.rp.http.HttpConstant;
 import os.kai.rp.http.HttpPayloadEntity;
 import os.kai.rp.http.HttpRequestEntity;
-import os.kai.rp.util.AsyncProvider;
 import os.kai.rp.util.Base64;
 import os.kai.rp.util.IOUtil;
 
@@ -31,7 +32,6 @@ public class HttpProxyHandler extends AbstractHandler {
         String hsid = System.currentTimeMillis()+"-"+gsn.getAndIncrement();
         ServletInputStream ins = request.getInputStream();
         ServletOutputStream outs = response.getOutputStream();
-        byte[] buffer = new byte[HttpConstant.BUF_LEN];
         //set response callbacks
         session.onResponse(hsid,res->{
             response.setStatus(res.getStatus());
@@ -41,14 +41,15 @@ public class HttpProxyHandler extends AbstractHandler {
                 response.setHeader(name,value);
             }
         });
-        AsyncProvider<String,String> provider = new AsyncProvider<>(v->v);
+        Base64AsyncProvider provider = new Base64AsyncProvider();
         session.onPayload(hsid,payload->provider.provide(payload.getData64()));
         session.onClose(hsid,provider::finish);
         try{
             //request
             HttpRequestEntity req = new HttpRequestEntity();
             req.setHsid(hsid);
-            req.setMethod(baseRequest.getMethod());
+            String method = baseRequest.getMethod();
+            req.setMethod(method);
             HttpURI uri = baseRequest.getHttpURI();
             req.setPath(uri.getPathQuery());
             req.setType(baseRequest.getContentType());
@@ -63,17 +64,19 @@ public class HttpProxyHandler extends AbstractHandler {
             }
             session.sendRequest(req);
             //payload
-            IOUtil.readAll(ins,(bs,l)->{
-                HttpPayloadEntity payload = new HttpPayloadEntity();
-                payload.setHsid(hsid);
-                payload.setData64(Base64.encode(bs,l));
-                session.sendPayload(payload);
-            },buffer);
+            if(HttpMethod.POST.asString().equals(method)){
+                byte[] buffer = new byte[HttpConstant.BUF_LEN];
+                IOUtil.readAll(ins,(bs,l)->{
+                    HttpPayloadEntity payload = new HttpPayloadEntity();
+                    payload.setHsid(hsid);
+                    payload.setData64(Base64.encode(bs,l));
+                    session.sendPayload(payload);
+                },buffer);
+            }
             session.sendClose(hsid);
             //response payload
-            for(String b64 : provider){
-                int len = Base64.decode(b64,buffer);
-                outs.write(buffer,0,len);
+            for(byte[] bs : provider){
+                outs.write(bs);
                 outs.flush();
             }
         }
