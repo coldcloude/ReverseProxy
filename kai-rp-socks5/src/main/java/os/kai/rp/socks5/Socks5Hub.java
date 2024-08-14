@@ -25,6 +25,10 @@ public class Socks5Hub {
     private final RawBase64NettyMultiplexSender sender = new RawBase64NettyMultiplexSender(nop.get());
     private final Map<String,ChannelHandlerContext> ctxMap = new ConcurrentHashMap<>();
 
+    private Socks5Hub(){
+        sender.start();
+    }
+
     public void register(String ssid){
         sender.register(ssid);
     }
