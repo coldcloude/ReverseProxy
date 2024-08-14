@@ -16,14 +16,18 @@ public class NettyClient {
 
     private final Bootstrap bootstrap;
 
-    public NettyClient(ChainedChannelInitializer initializer, String host,int port) {
+    public NettyClient(ChainedChannelInitializer initializer, String host, int port, NioEventLoopGroup group) {
         this.host = host;
         this.port = port;
         bootstrap = new Bootstrap()
-                .group(new NioEventLoopGroup())
+                .group(group)
                 .channel(NioSocketChannel.class)
                 .option(ChannelOption.SO_KEEPALIVE,false)
                 .handler(initializer);
+    }
+
+    public NettyClient(ChainedChannelInitializer initializer, String host, int port) {
+        this(initializer,host,port,new NioEventLoopGroup());
     }
 
     public ChannelFuture startAsync(){
