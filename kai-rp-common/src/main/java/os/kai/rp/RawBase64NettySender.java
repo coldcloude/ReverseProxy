@@ -6,7 +6,7 @@ import os.kai.rp.util.NettyUtil;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class RawBase64NettySender extends AbstractNettySender {
+public class RawBase64NettySender extends AbstractNettySender<String> {
 
     public RawBase64NettySender(ChannelHandlerContext ctx) {
         super(ctx);

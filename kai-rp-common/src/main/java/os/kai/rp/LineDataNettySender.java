@@ -5,7 +5,7 @@ import os.kai.rp.util.NettyUtil;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class LineDataNettySender extends AbstractNettySender {
+public class LineDataNettySender extends AbstractNettySender<String> {
 
     public LineDataNettySender(ChannelHandlerContext ctx) {
         super(ctx);
