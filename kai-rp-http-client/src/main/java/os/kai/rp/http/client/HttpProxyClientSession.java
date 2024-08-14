@@ -7,6 +7,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import os.kai.rp.TextProxyHub;
 import os.kai.rp.http.HttpConstant;
@@ -49,7 +50,7 @@ public class HttpProxyClientSession {
     public void start() throws Exception {
         client.start();
         client.getContentDecoderFactories().clear();
-        client.setUserAgentField(new HttpField("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0"));
+        client.setUserAgentField(null);
         TextProxyHub.get().registerClientReceiver(sessionId,data->{
             if(data.startsWith(HttpConstant.PREFIX_REQ)){
                 String json = data.substring(HttpConstant.PREFIX_REQ_LEN);
@@ -98,7 +99,7 @@ public class HttpProxyClientSession {
             for(Map.Entry<String,String> header : req.getHeaders().entrySet()){
                 String name = header.getKey();
                 String value = header.getValue();
-                if("Host".equals(name)){
+                if(name.equals(HttpHeader.HOST.asString())){
                     request.header(name,host+":"+port);
                 }
                 else {
