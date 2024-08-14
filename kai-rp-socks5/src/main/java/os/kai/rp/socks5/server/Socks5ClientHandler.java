@@ -182,7 +182,7 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
         if(s==S5_STATE_NEG){
             boolean finished = negReader.read(bb);
             if(finished){
-                NettyUtil.writeRaw(ctx,NEG_NO_AUTH);
+                NettyUtil.writeRawNoCopy(ctx,NEG_NO_AUTH);
                 state.set(S5_STATE_REQ);
                 log.info(formatPrefix()+"negotiation replied");
             }
@@ -190,7 +190,7 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
         else if(s==S5_STATE_REQ){
             boolean finished = reqReader.read(bb);
             if(finished){
-                NettyUtil.writeRaw(ctx,REQ_LOCAL);
+                NettyUtil.writeRawNoCopy(ctx,REQ_LOCAL);
                 Socks5RequestEntity entity = new Socks5RequestEntity();
                 entity.setSsid(ssid);
                 entity.setAddr(dstAddr.get());

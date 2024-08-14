@@ -22,7 +22,7 @@ public class Socks5Hub {
         nop.set(n);
     }
 
-    private final RawBase64NettyMultiplexSender sender = new RawBase64NettyMultiplexSender(nop.get(),Socks5Constant.BUF_LEN);
+    private final RawBase64NettyMultiplexSender sender = new RawBase64NettyMultiplexSender(nop.get());
     private final Map<String,ChannelHandlerContext> ctxMap = new ConcurrentHashMap<>();
 
     private Socks5Hub(){

@@ -12,7 +12,6 @@ import java.util.function.BiConsumer;
 
 public abstract class AbstractNettyMultiplexSender<T> extends Thread implements BiConsumer<String,T> {
     private class Context implements Runnable {
-        private final byte[] buffer = bufferSize>0?new byte[bufferSize]:null;
         private final AtomicReference<ChannelHandlerContext> ctx = new AtomicReference<>();
         private final ConcurrentLinkedQueue<T> queue = new ConcurrentLinkedQueue<>();
         @Override
@@ -21,21 +20,19 @@ public abstract class AbstractNettyMultiplexSender<T> extends Thread implements 
             if(c!=null){
                 T data;
                 while((data=queue.poll())!=null){
-                    write(c,data,buffer);
+                    write(c,data);
                 }
             }
         }
     }
-    private final int bufferSize;
     private final ExecutorService executor;
     private final LinkedBlockingQueue<String> eventQueue = new LinkedBlockingQueue<>();
     private final Map<String,Context> contextMap = new ConcurrentHashMap<>();
     private final AtomicBoolean running = new AtomicBoolean(true);
-    public AbstractNettyMultiplexSender(int nop, int bufferSize){
-        this.bufferSize = bufferSize;
+    public AbstractNettyMultiplexSender(int nop){
         this.executor = Executors.newFixedThreadPool(nop);
     }
-    protected abstract void write(ChannelHandlerContext ctx, T data, byte[] buffer);
+    protected abstract void write(ChannelHandlerContext ctx, T data);
     public void register(String id){
         contextMap.computeIfAbsent(id,k->new Context());
     }

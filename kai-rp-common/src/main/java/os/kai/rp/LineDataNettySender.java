@@ -8,15 +8,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class LineDataNettySender extends AbstractNettySender<String> {
 
     public LineDataNettySender(ChannelHandlerContext ctx) {
-        super(ctx,0);
+        super(ctx);
     }
 
     public LineDataNettySender(ChannelHandlerContext ctx, LinkedBlockingQueue<String> queue) {
-        super(ctx,0,queue);
+        super(ctx,queue);
     }
 
     @Override
-    protected void write(ChannelHandlerContext ctx,String data,byte[] buffer) {
+    protected void write(ChannelHandlerContext ctx,String data) {
         String str = TextProxyTag.DATA_START+data+TextProxyTag.DATA_END;
         NettyUtil.writeLine(ctx,str);
     }

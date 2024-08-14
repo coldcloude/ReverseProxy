@@ -14,19 +14,16 @@ public abstract class AbstractNettySender<T> extends Thread implements Consumer<
 
     private final ChannelHandlerContext ctx;
 
-    private final byte[] buffer;
-
-    public AbstractNettySender(ChannelHandlerContext ctx, int bufferSize, LinkedBlockingQueue<T> queue) {
+    public AbstractNettySender(ChannelHandlerContext ctx, LinkedBlockingQueue<T> queue) {
         this.ctx = ctx;
         this.queue = queue;
-        buffer = bufferSize>0?new byte[bufferSize]:null;
     }
 
-    public AbstractNettySender(ChannelHandlerContext ctx, int bufferSize) {
-        this(ctx,bufferSize,new LinkedBlockingQueue<>());
+    public AbstractNettySender(ChannelHandlerContext ctx) {
+        this(ctx,new LinkedBlockingQueue<>());
     }
 
-    protected abstract void write(ChannelHandlerContext ctx, T data, byte[] buffer);
+    protected abstract void write(ChannelHandlerContext ctx, T data);
 
     @Override
     public void accept(T v) {
@@ -39,7 +36,7 @@ public abstract class AbstractNettySender<T> extends Thread implements Consumer<
             if(!Thread.interrupted()){
                 try{
                     T data = queue.take();
-                    write(ctx,data,buffer);
+                    write(ctx,data);
                 }
                 catch(InterruptedException e){
                     Thread.currentThread().interrupt();
