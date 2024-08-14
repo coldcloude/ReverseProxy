@@ -34,7 +34,7 @@ public class TestClient {
 
         Request request = client.newRequest("http://"+host+":"+port+req.getPath());
         request.method(req.getMethod());
-        request.content(new HttpProxyBase64ContentProvider(req.getLength(),buffer),req.getType());
+        request.content(new HttpProxyBase64ContentProvider(req.getLength()),req.getType());
         InputStreamResponseListener listener = new InputStreamResponseListener();
         request.send(listener);
         HttpProxyBase64ContentProvider provider = (HttpProxyBase64ContentProvider)request.getContent();

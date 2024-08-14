@@ -17,14 +17,20 @@ public class NettyUtil {
         return r;
     }
 
-    public static void writeRaw(ChannelHandlerContext ctx, byte[] raw){
-        ByteBuf msg = Unpooled.copiedBuffer(raw);
+    public static void writeRawNoCopy(ChannelHandlerContext ctx,byte[] raw){
+        ByteBuf msg = Unpooled.wrappedBuffer(raw);
+        ctx.write(msg);
+        ctx.flush();
+    }
+
+    public static void writeRaw(ChannelHandlerContext ctx, byte[] raw, int offset, int len){
+        ByteBuf msg = Unpooled.copiedBuffer(raw,offset,len);
         ctx.write(msg);
         ctx.flush();
     }
 
     public static void writeLine(ChannelHandlerContext ctx, String line){
         byte[] req = (line+"\r\n").getBytes(StandardCharsets.UTF_8);
-        writeRaw(ctx,req);
+        writeRawNoCopy(ctx,req);
     }
 }

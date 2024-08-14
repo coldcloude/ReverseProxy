@@ -26,11 +26,19 @@ public class Base64 {
         }
     }
 
-    private static class DecodeContext{
-        private List<Character> charList;
+    @FunctionalInterface
+    public interface DecodeConsumer<T extends Exception>{
+        void accept(byte[] bs, int len) throws T;
+    }
+
+    public static class Decoder {
+        private final List<Character> charList;
         private int size;
         private int segNum;
-        private void input(String str){
+        private final byte[] buffer;
+        private int currSeg;
+        private int offset;
+        private Decoder(String str, byte[] buffer){
             //format input string
             int strLen = str.length();
             charList = new ArrayList<>(strLen);
@@ -61,55 +69,55 @@ public class Base64 {
                     }
                 }
             }
+            //set output
+            this.buffer = buffer==null?new byte[size]:buffer;
+            currSeg = 0;
+            offset = 0;
         }
-        private int decode(byte[] rst){
+        private int decode(){
             //calculate output size
-            int oSize = this.size;
-            int oSegNum = this.segNum;
-            int maxSize = rst.length;
-            if(maxSize<oSize){
-                int maxSegNum = maxSize/3;
-                int restMaxLen = maxSize-maxSegNum*3;
-                if(restMaxLen>0){
-                    maxSegNum++;
-                }
-                oSize = maxSize;
-                oSegNum = maxSegNum;
+            int oSize = this.size-offset;
+            int oSegNum = this.segNum-currSeg;
+            if(buffer.length<oSize){
+                oSegNum = buffer.length/3;
+                oSize = oSegNum*3;
             }
             //build
             int[] buf = new int[4];
             for(int si = 0; si<oSegNum; si++){
-                int charBase = si*4;
+                int charBase = (currSeg+si)*4;
                 for(int i = 0; i<4; i++){
                     buf[i] = CODE_MAP.getOrDefault(charList.get(charBase+i),-1);
                 }
                 int base = si*3;
                 if(buf[0]>=0&&buf[1]>=0&&base<oSize){
-                    rst[base] = (byte)(((buf[0]&0x3F)<<2)|((buf[1]&0x30)>>4));
+                    buffer[base] = (byte)(((buf[0]&0x3F)<<2)|((buf[1]&0x30)>>4));
                     if(buf[2]>=0&&base+1<oSize){
-                        rst[base+1] = (byte)(((buf[1]&0x0F)<<4)|((buf[2]&0x3C)>>2));
+                        buffer[base+1] = (byte)(((buf[1]&0x0F)<<4)|((buf[2]&0x3C)>>2));
                         if(buf[3]>=0&&base+2<oSize){
-                            rst[base+2] = (byte)(((buf[2]&0x03)<<6)|(buf[3]&0x3F));
+                            buffer[base+2] = (byte)(((buf[2]&0x03)<<6)|(buf[3]&0x3F));
                         }
                     }
                 }
             }
+            currSeg += oSegNum;
+            offset += oSize;
             return oSize;
         }
     }
 
-    public static int decode(String str, byte[] buf) {
-        DecodeContext ctx = new DecodeContext();
-        ctx.input(str);
-        return ctx.decode(buf);
+    public static <T extends Exception> void decode(String str,byte[] buffer,DecodeConsumer<T> op) throws T {
+        Decoder decoder = new Decoder(str,buffer);
+        int len;
+        while((len=decoder.decode())>0){
+            op.accept(buffer,len);
+        }
     }
 
     public static byte[] decode(String str){
-        DecodeContext ctx = new DecodeContext();
-        ctx.input(str);
-        byte[] rst = new byte[ctx.size];
-        ctx.decode(rst);
-        return rst;
+        Decoder ctx = new Decoder(str,null);
+        ctx.decode();
+        return ctx.buffer;
     }
 
     public static String encode(byte[] arr,int length) {

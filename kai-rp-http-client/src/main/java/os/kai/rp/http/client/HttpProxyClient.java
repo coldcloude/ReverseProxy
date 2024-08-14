@@ -22,9 +22,9 @@ public class HttpProxyClient {
         int proxyPort = Integer.parseInt(args[4]);
         String sessionId = args[5];
         long timeout = Long.parseLong(args[6]);
-//        String schema = "https";
-//        String host = "fed595f675edb37da0.gradio.live";
-//        int port = 443;
+//        String schema = "http";
+//        String host = "mirrors.163.com";
+//        int port = 80;
 //        String proxyHost = "127.0.0.1";
 //        int proxyPort = 13355;
 //        String sessionId = HttpConstant.SID;

@@ -48,16 +48,7 @@ public class TestServer {
                         System.arraycopy(bs,0,r,0,l);
                         rst.add(r);
                     },rbs);
-                    int size = 0;
-                    for(byte[] r : rst){
-                        size += r.length;
-                    }
-                    byte[] rr = new byte[size];
-                    int offset = 0;
-                    for(byte[] r : rst){
-                        System.arraycopy(r,0,rr,offset,r.length);
-                        offset += r.length;
-                    }
+                    byte[] rr = IOUtil.concat(rst);
                     String rstr = new String(rr);
                     if(rstr.startsWith("path=")&&!rstr.contains("&")){
                         path = rstr.substring(5);

@@ -1,6 +1,7 @@
 package os.kai.rp.socks5.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.netty.channel.nio.NioEventLoopGroup;
 import lombok.extern.slf4j.Slf4j;
 import os.kai.rp.util.DoubleLockSingleton;
 import os.kai.rp.TextProxyHub;
@@ -10,15 +11,13 @@ import os.kai.rp.socks5.Socks5RelayEntity;
 import os.kai.rp.socks5.Socks5RequestEntity;
 import os.kai.rp.util.JacksonUtil;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 @Slf4j
 public class Socks5ClientGroup {
-    private static final DoubleLockSingleton<Socks5ClientGroup> group = new DoubleLockSingleton<>(Socks5ClientGroup::new);
+    private static final DoubleLockSingleton<Socks5ClientGroup> clientGroup = new DoubleLockSingleton<>(Socks5ClientGroup::new);
     public static Socks5ClientGroup get(){
-        return group.get();
+        return clientGroup.get();
     }
+    private final NioEventLoopGroup group = new NioEventLoopGroup();
     public void start(){
         TextProxyHub.get().registerClientReceiver(Socks5Constant.SID,data->{
             if(data.startsWith(Socks5Constant.PREFIX_REQ)){
@@ -30,7 +29,7 @@ public class Socks5ClientGroup {
                     int port = r.getPort();
                     String logPrefix = "ssid="+ssid+", host="+host+", port="+port+": ";
                     Socks5Hub.get().register(ssid);
-                    Socks5Client client = new Socks5Client(host,port,ssid);
+                    Socks5Client client = new Socks5Client(host,port,ssid,group);
                     client.startAsync();
                     log.info(logPrefix+"started");
                 }

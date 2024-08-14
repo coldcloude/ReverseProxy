@@ -2,6 +2,7 @@ package os.kai.rp.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 public class IOUtil {
     @FunctionalInterface
@@ -15,5 +16,18 @@ public class IOUtil {
                 op.accept(buf,len);
             }
         }
+    }
+    public static byte[] concat(List<byte[]> bbs){
+        int sum = 0;
+        for(byte[] bb : bbs){
+            sum += bb.length;
+        }
+        byte[] r = new byte[sum];
+        int offset = 0;
+        for(byte[] bb : bbs){
+            System.arraycopy(bb,0,r,offset,bb.length);
+            offset += bb.length;
+        }
+        return r;
     }
 }
