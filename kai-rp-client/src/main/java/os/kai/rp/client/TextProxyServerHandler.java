@@ -2,6 +2,7 @@ package os.kai.rp.client;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.extern.slf4j.Slf4j;
 import os.kai.rp.LineDataNettySender;
 import os.kai.rp.util.NettyUtil;
 import os.kai.rp.TextProxyHub;
@@ -12,7 +13,12 @@ import java.util.TimerTask;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+@Slf4j
 public class TextProxyServerHandler extends ChannelInboundHandlerAdapter {
+
+    private final String host;
+
+    private final int port;
 
     private final String sessionId;
 
@@ -35,13 +41,16 @@ public class TextProxyServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    public TextProxyServerHandler(String sessionId,long timeout) {
+    public TextProxyServerHandler(String host,int port,String sessionId,long timeout) {
+        this.host = host;
+        this.port = port;
         this.sessionId = sessionId;
         this.timeout = timeout;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        log.info("connected: host="+host+", port="+port+", session="+sessionId);
         NettyUtil.writeLine(ctx,TextProxyTag.INIT_START+sessionId+TextProxyTag.INIT_END);
         lock.lock();
         try{
@@ -58,6 +67,7 @@ public class TextProxyServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        log.info("disconnected: host="+host+", port="+port+", session="+sessionId);
         lock.lock();
         try{
             //stop timer
