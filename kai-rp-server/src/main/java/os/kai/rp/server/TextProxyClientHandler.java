@@ -74,7 +74,7 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
                 if(s==INIT){
                     state.set(PENDING);
                     timer = new Timer();
-                    timer.schedule(new Ticker(ctx),timeout/3);
+                    timer.schedule(new Ticker(ctx),timeout/3,timeout/3);
                 }
             }
             finally{
