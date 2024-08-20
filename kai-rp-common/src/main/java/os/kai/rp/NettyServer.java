@@ -36,6 +36,7 @@ public class NettyServer {
                     .channel(NioServerSocketChannel.class)
                     .childHandler(initializer)
                     .option(ChannelOption.SO_BACKLOG,128)
+                    .option(ChannelOption.SO_REUSEADDR,true)
                     .childOption(ChannelOption.SO_KEEPALIVE,false)
                     .bind(host,port)
                     .sync();
