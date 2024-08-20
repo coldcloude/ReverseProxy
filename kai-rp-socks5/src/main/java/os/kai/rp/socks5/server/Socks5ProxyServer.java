@@ -8,8 +8,6 @@ import os.kai.rp.socks5.Socks5Hub;
 import os.kai.rp.socks5.client.Socks5ClientGroup;
 import os.kai.rp.util.NettyUtil;
 
-import java.net.InetSocketAddress;
-
 @Slf4j
 public class Socks5ProxyServer {
     private final TextProxyServer proxyServer;
