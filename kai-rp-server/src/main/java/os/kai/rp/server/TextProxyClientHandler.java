@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiConsumer;
 
 @Slf4j
 public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
@@ -35,6 +36,10 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
 
     private final AtomicInteger state = new AtomicInteger();
 
+    private final BiConsumer<String,ChannelHandlerContext> onConnect;
+
+    private final BiConsumer<String,ChannelHandlerContext> onDisconnect;
+
     private volatile Timer timer;
 
     private volatile String sessionId;
@@ -50,18 +55,23 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
         public void run() {
             long time = System.currentTimeMillis();
             if(time-lastUpdateTime.get()>timeout){
-                stop();
                 ctx.disconnect();
             }
         }
     }
 
-    public TextProxyClientHandler(long timeout) {
+    public TextProxyClientHandler(long timeout, BiConsumer<String,ChannelHandlerContext> onConnect, BiConsumer<String,ChannelHandlerContext> onDisconnect) {
         this.timeout = timeout;
+        this.onConnect = onConnect;
+        this.onDisconnect = onDisconnect;
         state.set(INIT);
         timer = null;
         sessionId = null;
         sender = null;
+    }
+
+    public TextProxyClientHandler(long timeout) {
+        this(timeout,null,null);
     }
 
     @Override
@@ -86,7 +96,37 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        stop();
+        int s = state.get();
+        if(s!=STOPPED){
+            lock.writeLock().lock();
+            try{
+                s = state.get();
+                if(s!=STOPPED){
+                    //stop state
+                    state.set(STOPPED);
+                    //stop timer
+                    if(timer!=null){
+                        timer.cancel();
+                        timer = null;
+                    }
+                    //stop session
+                    if(sessionId!=null){
+                        TextProxyHub.get().unregisterClientReceiver(sessionId);
+                        sessionId = null;
+                    }
+                    //stop sender
+                    if(sender!=null){
+                        sender.shutdown();
+                        sender = null;
+                    }
+                    //custom disconnect op
+                    onDisconnect.accept(sessionId,ctx);
+                }
+            }
+            finally{
+                lock.writeLock().unlock();
+            }
+        }
     }
 
     @Override
@@ -111,6 +151,8 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
                             //register receiver
                             TextProxyHub.get().registerClientReceiver(sid,sender);
                             sessionId = sid;
+                            //custom connect op
+                            onConnect.accept(sid,ctx);
                             tick();
                         }
                     }
@@ -141,37 +183,5 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx,Throwable cause) throws Exception {
         log.warn("sessionId="+sessionId+", channelId="+ctx.channel().id().asShortText(),cause);
-    }
-
-    public void stop(){
-        int s = state.get();
-        if(s!=STOPPED){
-            lock.writeLock().lock();
-            try{
-                s = state.get();
-                if(s!=STOPPED){
-                    //stop state
-                    state.set(STOPPED);
-                    //stop timer
-                    if(timer!=null){
-                        timer.cancel();
-                        timer = null;
-                    }
-                    //stop session
-                    if(sessionId!=null){
-                        TextProxyHub.get().unregisterClientReceiver(sessionId);
-                        sessionId = null;
-                    }
-                    //stop sender
-                    if(sender!=null){
-                        sender.shutdown();
-                        sender = null;
-                    }
-                }
-            }
-            finally{
-                lock.writeLock().unlock();
-            }
-        }
     }
 }

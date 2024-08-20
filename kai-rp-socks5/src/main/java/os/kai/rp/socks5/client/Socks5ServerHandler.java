@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import os.kai.rp.TextProxyHub;
 import os.kai.rp.socks5.Socks5Constant;
 import os.kai.rp.socks5.Socks5Hub;
-import os.kai.rp.socks5.Socks5Util;
 
 @Slf4j
 public class Socks5ServerHandler extends ChannelInboundHandlerAdapter {
@@ -39,7 +38,7 @@ public class Socks5ServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx,Object msg) throws Exception {
         ByteBuf bb = (ByteBuf)msg;
-        Socks5Util.readAndSendRelayToServer(ssid,bb,buffer);
+        Socks5Hub.get().readAndSendRelayToServer(ssid,host,port,bb,buffer);
         bb.release();
     }
 
@@ -47,7 +46,7 @@ public class Socks5ServerHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.info(formatPrefix()+"disconnected");
         Socks5Hub.get().close(ssid,false);
-        TextProxyHub.get().sendToServer(Socks5Constant.SID,Socks5Constant.PREFIX_CLOSE+ssid);
+        Socks5Hub.get().sendClose(ssid,host,port);
     }
 
     @Override

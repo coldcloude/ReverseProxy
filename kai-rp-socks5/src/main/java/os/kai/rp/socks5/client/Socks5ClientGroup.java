@@ -3,7 +3,6 @@ package os.kai.rp.socks5.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.channel.nio.NioEventLoopGroup;
 import lombok.extern.slf4j.Slf4j;
-import os.kai.rp.util.DoubleLockSingleton;
 import os.kai.rp.TextProxyHub;
 import os.kai.rp.socks5.Socks5Constant;
 import os.kai.rp.socks5.Socks5Hub;
@@ -13,13 +12,13 @@ import os.kai.rp.util.JacksonUtil;
 
 @Slf4j
 public class Socks5ClientGroup {
-    private static final DoubleLockSingleton<Socks5ClientGroup> clientGroup = new DoubleLockSingleton<>(Socks5ClientGroup::new);
-    public static Socks5ClientGroup get(){
-        return clientGroup.get();
-    }
+    private final String sessionId;
     private final NioEventLoopGroup group = new NioEventLoopGroup();
+    public Socks5ClientGroup(String sessionId) {
+        this.sessionId = sessionId;
+    }
     public void start(){
-        TextProxyHub.get().registerClientReceiver(Socks5Constant.SID,data->{
+        TextProxyHub.get().registerClientReceiver(sessionId,data->{
             if(data.startsWith(Socks5Constant.PREFIX_REQ)){
                 String json = data.substring(Socks5Constant.PREFIX_REQ_LEN);
                 try{

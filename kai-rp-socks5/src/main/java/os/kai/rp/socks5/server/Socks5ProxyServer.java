@@ -1,19 +1,38 @@
 package os.kai.rp.socks5.server;
 
 import lombok.extern.slf4j.Slf4j;
+import os.kai.rp.TextProxyHub;
 import os.kai.rp.server.TextProxyServer;
+import os.kai.rp.socks5.Socks5Constant;
+import os.kai.rp.socks5.Socks5Hub;
+import os.kai.rp.socks5.client.Socks5ClientGroup;
+import os.kai.rp.util.NettyUtil;
 
 @Slf4j
 public class Socks5ProxyServer {
     private final TextProxyServer proxyServer;
     private final Socks5Server socks5Server;
+    private final Socks5ClientGroup clientGroup;
     public Socks5ProxyServer(String host,int port,String proxyHost,int proxyPort,long timeout){
         socks5Server = new Socks5Server(host,port);
-        proxyServer = new TextProxyServer(proxyHost,proxyPort,timeout);
+        clientGroup = new Socks5ClientGroup(Socks5Constant.SID);
+        proxyServer = new TextProxyServer(proxyHost,proxyPort,timeout,(sid,ctx)->{
+            String addr = NettyUtil.getRemoteAddress(ctx);
+            Socks5Hub.get().registerProxy(addr,sid);
+            TextProxyHub.get().registerServerReceiver(sid,data->Socks5Hub.get().process(data));
+        },(sid,ctx)->{
+            String addr = NettyUtil.getRemoteAddress(ctx);
+            Socks5Hub.get().unregisterProxy(addr);
+            TextProxyHub.get().unregisterServerReceiver(addr);
+        });
     }
     public void start() throws Exception {
+        //server for outside socks5 connect in
         Thread sock5Thread = new Thread(socks5Server::start);
         sock5Thread.start();
+        //not proxy to client
+        clientGroup.start();
+        //proxy to client
         Thread proxyThread = new Thread(proxyServer::start);
         proxyThread.start();
         sock5Thread.join();
