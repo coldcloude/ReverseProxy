@@ -4,10 +4,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
 public class NettyUtil {
-
+    public static String getRemoteAddress(ChannelHandlerContext ctx){
+        InetSocketAddress addr = (InetSocketAddress)ctx.channel().remoteAddress();
+        return addr.getAddress().getHostAddress();
+    }
     public static String readLine(Object msg){
         ByteBuf buf = (ByteBuf) msg;
         byte[] req = new byte[buf.readableBytes()];
@@ -16,19 +20,16 @@ public class NettyUtil {
         buf.release();
         return r;
     }
-
     public static void writeRawNoCopy(ChannelHandlerContext ctx,byte[] raw){
         ByteBuf msg = Unpooled.wrappedBuffer(raw);
         ctx.write(msg);
         ctx.flush();
     }
-
     public static void writeRaw(ChannelHandlerContext ctx, byte[] raw, int offset, int len){
         ByteBuf msg = Unpooled.copiedBuffer(raw,offset,len);
         ctx.write(msg);
         ctx.flush();
     }
-
     public static void writeLine(ChannelHandlerContext ctx, String line){
         byte[] req = (line+"\r\n").getBytes(StandardCharsets.UTF_8);
         writeRawNoCopy(ctx,req);

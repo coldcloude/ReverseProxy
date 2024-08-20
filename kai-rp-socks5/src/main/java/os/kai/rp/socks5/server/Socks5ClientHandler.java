@@ -14,6 +14,8 @@ import os.kai.rp.util.NettyUtil;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.UnknownHostException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -191,19 +193,14 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
             boolean finished = reqReader.read(bb);
             if(finished){
                 NettyUtil.writeRawNoCopy(ctx,REQ_LOCAL);
-                Socks5RequestEntity entity = new Socks5RequestEntity();
-                entity.setSsid(ssid);
-                entity.setAddr(dstAddr.get());
-                entity.setPort(dstPort.get());
-                String json = JacksonUtil.stringify(entity);
-                TextProxyHub.get().sendToClient(Socks5Constant.SID,Socks5Constant.PREFIX_REQ+json);
+                Socks5Hub.get().sendRequest(ssid,dstAddr.get(),dstPort.get());
                 state.set(S5_STATE_RELAY);
                 logPrefix.set(logPrefix.get()+", addr="+dstAddr.get()+", port="+dstPort.get());
                 log.info(formatPrefix()+"request replied and sent");
             }
         }
         else if(s==S5_STATE_RELAY){
-            Socks5Util.readAndSendRelayToClient(ssid,bb,buffer);
+            Socks5Hub.get().readAndSendRelayToClient(ssid,dstAddr.get(),dstPort.get(),bb,buffer);
         }
         bb.release();
     }
@@ -212,7 +209,7 @@ public class Socks5ClientHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.info(formatPrefix()+"disconnected");
         Socks5Hub.get().close(ssid,false);
-        TextProxyHub.get().sendToClient(Socks5Constant.SID,Socks5Constant.PREFIX_CLOSE+ssid);
+        Socks5Hub.get().sendClose(ssid,dstAddr.get(),dstPort.get());
     }
 
     @Override
