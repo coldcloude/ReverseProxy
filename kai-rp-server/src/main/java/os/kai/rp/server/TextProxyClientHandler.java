@@ -131,7 +131,7 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx,Object msg) throws Exception {
-        String body = NettyUtil.readLine(msg);
+        String body = NettyUtil.readString(msg);
         if(body.equals(TextProxyTag.KEEP_SINGLE)){
             tick();
         }

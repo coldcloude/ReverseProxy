@@ -12,13 +12,16 @@ public class NettyUtil {
         InetSocketAddress addr = (InetSocketAddress)ctx.channel().remoteAddress();
         return addr.getAddress().getHostAddress();
     }
-    public static String readLine(Object msg){
+    public static byte[] readBytes(Object msg){
         ByteBuf buf = (ByteBuf) msg;
         byte[] req = new byte[buf.readableBytes()];
         buf.readBytes(req);
-        String r = new String(req,StandardCharsets.UTF_8);
         buf.release();
-        return r;
+        return req;
+    }
+    public static String readString(Object msg){
+        byte[] req = readBytes(msg);
+        return new String(req,StandardCharsets.UTF_8);
     }
     public static void writeRawNoCopy(ChannelHandlerContext ctx,byte[] raw){
         ByteBuf msg = Unpooled.wrappedBuffer(raw);

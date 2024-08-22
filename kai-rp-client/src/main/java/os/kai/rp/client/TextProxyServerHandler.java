@@ -90,7 +90,7 @@ public class TextProxyServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx,Object msg) throws Exception {
-        String line = NettyUtil.readLine(msg);
+        String line = NettyUtil.readString(msg);
         String data = TextProxyTag.unpackData(line);
         if(data!=null){
             TextProxyHub.get().sendToClient(sessionId,data);
