@@ -1,6 +1,8 @@
 package os.kai.rp.http;
 
 public class HttpConstant {
+    public static final String HTTP_HEADER_CONTENT_TYPE = "Content-Type";
+    public static final String HTTP_HEADER_CONTENT_LENGTH = "Content-Length";
     public static final String SID = "http";
     public static final String PREFIX_REQ = "http.request:";
     public static final String PREFIX_RES = "http.response:";

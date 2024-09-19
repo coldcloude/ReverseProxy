@@ -1,38 +1,35 @@
-package os.kai.rp.http.server;
+package os.kai.rp.http.client;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
 import lombok.extern.slf4j.Slf4j;
-import os.kai.rp.http.HttpConstant;
 import os.kai.rp.http.HttpPayloadEntity;
-import os.kai.rp.http.HttpRequestEntity;
-import os.kai.rp.util.Base64;
-import os.kai.rp.util.NettyUtil;
+import os.kai.rp.http.HttpResponseEntity;
 
-import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
-public class HttpProxyClientHandler extends ChannelInboundHandlerAdapter {
-    private static final AtomicLong gsn = new AtomicLong(0);
-    private final HttpProxyServerSession session;
-    private final String httpSessionId = System.currentTimeMillis()+"-"+gsn.get();
+public class HttpProxyServerHandler extends ChannelInboundHandlerAdapter {
+    private final String host;
+    private final int port;
+    private final HttpProxyClientSession session;
+    private final String httpSessionId;
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    public HttpProxyClientHandler(HttpProxyServerSession session){
+    public HttpProxyServerHandler(String host,int port,HttpProxyClientSession session,String httpSessionId) {
+        this.host = host;
+        this.port = port;
         this.session = session;
+        this.httpSessionId = httpSessionId;
     }
-
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        this.session.register(httpSessionId,res->{
-            res.display(log);
-            DefaultHttpResponse response = res.output();
-            ctx.write(response);
+        session.register(httpSessionId,req->{
+            //reset host if exists
+            req.getHeaders().computeIfPresent("Host",(k,v)->host+":"+port);
+            req.display(log);
+            DefaultHttpRequest request = req.output();
+            ctx.write(request);
         },payload->{
             payload.display(log);
             DefaultHttpContent content = payload.output();
@@ -44,14 +41,13 @@ public class HttpProxyClientHandler extends ChannelInboundHandlerAdapter {
         });
         super.channelActive(ctx);
     }
-
     @Override
     public void channelRead(ChannelHandlerContext ctx,Object msg) throws Exception {
-        if (msg instanceof HttpRequest) {
-            HttpRequest request = (HttpRequest) msg;
-            HttpRequestEntity req = new HttpRequestEntity(httpSessionId,request);
-            req.display(log);
-            session.sendRequest(req);
+        if (msg instanceof HttpResponse) {
+            HttpResponse response = (HttpResponse) msg;
+            HttpResponseEntity res = new HttpResponseEntity(httpSessionId,response);
+            res.display(log);
+            session.sendResponse(res);
         }
         if (msg instanceof HttpContent) {
             HttpContent content = (HttpContent) msg;

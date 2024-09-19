@@ -33,10 +33,9 @@ public class Base64 {
         private final List<Character> charList;
         private int size;
         private int segNum;
-        private final byte[] buffer;
         private int currSeg;
         private int offset;
-        private Decoder(String str, byte[] buffer){
+        private Decoder(String str){
             //format input string
             int strLen = str.length();
             charList = new ArrayList<>(strLen);
@@ -68,11 +67,10 @@ public class Base64 {
                 }
             }
             //set output
-            this.buffer = buffer==null?new byte[size]:buffer;
             currSeg = 0;
             offset = 0;
         }
-        private int decode(){
+        private int decode(byte[] buffer){
             //calculate output size
             int oSize = this.size-offset;
             int oSegNum = this.segNum-currSeg;
@@ -104,16 +102,21 @@ public class Base64 {
         }
     }
     public static <T extends Exception> void decode(String str,byte[] buffer,DecodeConsumer<T> op) throws T {
-        Decoder decoder = new Decoder(str,buffer);
+        Decoder decoder = new Decoder(str);
         int len;
-        while((len=decoder.decode())>0){
+        while((len=decoder.decode(buffer))>0){
             op.accept(buffer,len);
         }
     }
     public static byte[] decode(String str){
-        Decoder ctx = new Decoder(str,null);
-        ctx.decode();
-        return ctx.buffer;
+        Decoder ctx = new Decoder(str);
+        byte[] buffer = new byte[ctx.size];
+        ctx.decode(buffer);
+        return buffer;
+    }
+    public static int size(String str) {
+        Decoder ctx = new Decoder(str);
+        return ctx.size;
     }
     public static String encode(byte[] arr,int length) {
         length = Math.min(length,arr.length);

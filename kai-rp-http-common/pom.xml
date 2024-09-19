@@ -50,6 +50,12 @@
     <dependencies>
 
         <dependency>
+            <groupId>os.kai</groupId>
+            <artifactId>kai-rp-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>

@@ -2,13 +2,9 @@ package os.kai.rp.http.client;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import os.kai.rp.Base64AsyncProvider;
-import os.kai.rp.http.HttpConstant;
-import os.kai.rp.util.AsyncProvider;
-import os.kai.rp.util.Base64;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
-import java.util.function.Function;
 
 public class HttpProxyBase64ContentProvider implements ContentProvider {
     private final Base64AsyncProvider provider = new Base64AsyncProvider();
