@@ -8,6 +8,9 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
 public class NettyUtil {
+    private NettyUtil(){
+
+    }
     public static String getRemoteAddress(ChannelHandlerContext ctx){
         InetSocketAddress addr = (InetSocketAddress)ctx.channel().remoteAddress();
         return addr.getAddress().getHostAddress();

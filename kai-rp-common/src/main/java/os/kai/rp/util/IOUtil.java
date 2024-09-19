@@ -5,6 +5,9 @@ import java.io.InputStream;
 import java.util.List;
 
 public class IOUtil {
+    private IOUtil(){
+
+    }
     @FunctionalInterface
     public interface BufferConsumer {
         void accept(byte[] buf, int len) throws IOException;

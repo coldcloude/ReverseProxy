@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 public class Base64 {
+    private Base64(){
 
+    }
     private static final char[] ALPHABET = new char[]{
             'A','B','C','D','E','F','G','H',
             'I','J','K','L','M','N','O','P',
@@ -17,20 +19,16 @@ public class Base64 {
             'w','x','y','z','0','1','2','3',
             '4','5','6','7','8','9','+','/'
     };
-
     private static final Map<Character,Integer> CODE_MAP = new HashMap<>();
-
     static {
         for(int i = 0; i<ALPHABET.length; i++){
             CODE_MAP.put(ALPHABET[i],i);
         }
     }
-
     @FunctionalInterface
     public interface DecodeConsumer<T extends Exception>{
         void accept(byte[] bs, int len) throws T;
     }
-
     public static class Decoder {
         private final List<Character> charList;
         private int size;
@@ -105,7 +103,6 @@ public class Base64 {
             return oSize;
         }
     }
-
     public static <T extends Exception> void decode(String str,byte[] buffer,DecodeConsumer<T> op) throws T {
         Decoder decoder = new Decoder(str,buffer);
         int len;
@@ -113,13 +110,11 @@ public class Base64 {
             op.accept(buffer,len);
         }
     }
-
     public static byte[] decode(String str){
         Decoder ctx = new Decoder(str,null);
         ctx.decode();
         return ctx.buffer;
     }
-
     public static String encode(byte[] arr,int length) {
         length = Math.min(length,arr.length);
         StringBuilder builder = new StringBuilder();
@@ -146,7 +141,6 @@ public class Base64 {
         }
         return builder.toString();
     }
-
     public static String encode(byte[] arr) {
         return encode(arr,arr.length);
     }

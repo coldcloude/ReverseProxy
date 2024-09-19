@@ -26,7 +26,7 @@ public class TextProxyServerHandler extends ChannelInboundHandlerAdapter {
 
     private final Lock lock = new ReentrantLock();
 
-    private volatile LineDataNettySender sender;
+    private final LineDataNettySender sender = new LineDataNettySender();
 
     private volatile Timer timer;
 
@@ -54,7 +54,7 @@ public class TextProxyServerHandler extends ChannelInboundHandlerAdapter {
         NettyUtil.writeLine(ctx,TextProxyTag.INIT_START+sessionId+TextProxyTag.INIT_END);
         lock.lock();
         try{
-            sender = new LineDataNettySender(ctx);
+            sender.set(ctx);
             sender.start();
             TextProxyHub.get().registerServerReceiver(sessionId,sender);
             timer = new Timer();
@@ -78,10 +78,7 @@ public class TextProxyServerHandler extends ChannelInboundHandlerAdapter {
             //stop session
             TextProxyHub.get().unregisterServerReceiver(sessionId);
             //stop sender
-            if(sender!=null){
-                sender.shutdown();
-                sender = null;
-            }
+            sender.shutdown();
         }
         finally{
             lock.unlock();

@@ -1,7 +1,5 @@
 package os.kai.rp;
 
-import os.kai.rp.util.DoubleLockSingleton;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;

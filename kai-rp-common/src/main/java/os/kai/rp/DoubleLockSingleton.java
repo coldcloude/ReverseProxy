@@ -1,4 +1,4 @@
-package os.kai.rp.util;
+package os.kai.rp;
 
 import java.util.function.Supplier;
 

@@ -1,15 +1,16 @@
 package os.kai.rp;
 
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 
 import java.util.Arrays;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 public class LineBasedChannelInitializer extends ChainedChannelInitializer {
-    public LineBasedChannelInitializer(Supplier<ChannelHandler> handlerCreator) {
+    public LineBasedChannelInitializer(Function<SocketChannel,ChannelHandler> handlerCreator) {
         super(Arrays.asList(
-                ()->new LineBasedFrameDecoder(Integer.MAX_VALUE),
+                ch->new LineBasedFrameDecoder(Integer.MAX_VALUE),
                 handlerCreator
         ));
     }

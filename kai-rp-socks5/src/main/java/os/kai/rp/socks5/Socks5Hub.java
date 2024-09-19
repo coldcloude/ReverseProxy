@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import os.kai.rp.RawBase64NettyMultiplexSender;
 import os.kai.rp.TextProxyHub;
 import os.kai.rp.util.Base64;
-import os.kai.rp.util.DoubleLockSingleton;
+import os.kai.rp.DoubleLockSingleton;
 import os.kai.rp.util.JacksonUtil;
 
 import java.util.Map;

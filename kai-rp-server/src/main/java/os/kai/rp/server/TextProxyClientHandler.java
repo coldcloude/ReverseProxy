@@ -40,11 +40,11 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
 
     private final BiConsumer<String,ChannelHandlerContext> onDisconnect;
 
+    private final LineDataNettySender sender = new LineDataNettySender();
+
     private volatile Timer timer;
 
     private volatile String sessionId;
-
-    private volatile LineDataNettySender sender;
 
     private class Ticker extends TimerTask{
         private final ChannelHandlerContext ctx;
@@ -67,7 +67,6 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
         state.set(INIT);
         timer = null;
         sessionId = null;
-        sender = null;
     }
 
     public TextProxyClientHandler(long timeout) {
@@ -115,10 +114,7 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
                         sessionId = null;
                     }
                     //stop sender
-                    if(sender!=null){
-                        sender.shutdown();
-                        sender = null;
-                    }
+                    sender.shutdown();
                     //custom disconnect op
                     onDisconnect.accept(sessionId,ctx);
                 }
@@ -146,7 +142,7 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
                         if(s==PENDING){
                             state.set(RUNNING);
                             //start sender
-                            sender = new LineDataNettySender(ctx);
+                            sender.set(ctx);
                             sender.start();
                             //register receiver
                             TextProxyHub.get().registerClientReceiver(sid,sender);

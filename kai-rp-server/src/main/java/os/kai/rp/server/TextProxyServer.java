@@ -6,11 +6,16 @@ import os.kai.rp.NettyServer;
 
 import java.util.function.BiConsumer;
 
-public class TextProxyServer extends NettyServer {
+public class TextProxyServer {
+    private final NettyServer server;
     public TextProxyServer(String host,int port,long timeout,BiConsumer<String,ChannelHandlerContext> onConnect,BiConsumer<String,ChannelHandlerContext> onDisconnect) {
-        super(new LineBasedChannelInitializer(()->new TextProxyClientHandler(timeout,onConnect,onDisconnect)),host,port);
+        LineBasedChannelInitializer initializer = new LineBasedChannelInitializer(ch->new TextProxyClientHandler(timeout,onConnect,onDisconnect));
+        server = new NettyServer(initializer,host,port);
     }
     public TextProxyServer(String host,int port,long timeout) {
         this(host,port,timeout,null,null);
+    }
+    public void start(){
+        server.start();
     }
 }
