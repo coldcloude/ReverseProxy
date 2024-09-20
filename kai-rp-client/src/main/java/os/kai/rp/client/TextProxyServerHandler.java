@@ -58,7 +58,7 @@ public class TextProxyServerHandler extends ChannelInboundHandlerAdapter {
             sender.start();
             TextProxyHub.get().registerServerReceiver(sessionId,sender);
             timer = new Timer();
-            timer.schedule(new Ticker(ctx),timeout/3);
+            timer.schedule(new Ticker(ctx),timeout/3,timeout/3);
         }
         finally{
             lock.unlock();
