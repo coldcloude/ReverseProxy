@@ -116,7 +116,9 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
                     //stop sender
                     sender.shutdown();
                     //custom disconnect op
-                    onDisconnect.accept(sessionId,ctx);
+                    if(onDisconnect!=null){
+                        onDisconnect.accept(sessionId,ctx);
+                    }
                 }
             }
             finally{
@@ -148,7 +150,9 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
                             TextProxyHub.get().registerClientReceiver(sid,sender);
                             sessionId = sid;
                             //custom connect op
-                            onConnect.accept(sid,ctx);
+                            if(onConnect!=null){
+                                onConnect.accept(sid,ctx);
+                            }
                             tick();
                         }
                     }

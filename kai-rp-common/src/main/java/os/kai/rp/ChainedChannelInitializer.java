@@ -21,7 +21,7 @@ public class ChainedChannelInitializer extends ChannelInitializer<SocketChannel>
         for(Function<SocketChannel,ChannelHandler> creator : creators){
             ChannelHandler handler = creator.apply(ch);
             if(handler!=null){
-                pipeline = pipeline.addLast();
+                pipeline = pipeline.addLast(handler);
             }
         }
     }

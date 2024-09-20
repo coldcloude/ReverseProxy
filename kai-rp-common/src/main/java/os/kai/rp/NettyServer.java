@@ -16,39 +16,41 @@ public class NettyServer {
 
     private final int port;
 
+    private final EventLoopGroup bossGroup = new NioEventLoopGroup();
+
+    private final EventLoopGroup workerGroup = new NioEventLoopGroup();
+
     public NettyServer(ChainedChannelInitializer initializer, String host, int port) {
         this.initializer = initializer;
         this.host = host;
         this.port = port;
     }
 
+    public ChannelFuture startAsync(){
+        log.info("-----> start server: port="+port);
+        return new ServerBootstrap()
+                .group(bossGroup, workerGroup)
+                .channel(NioServerSocketChannel.class)
+                .childHandler(initializer)
+                .option(ChannelOption.SO_BACKLOG,128)
+                .option(ChannelOption.SO_REUSEADDR,true)
+                .childOption(ChannelOption.SO_KEEPALIVE,false)
+                .bind(host,port);
+    }
+
     public void start(){
-
-        EventLoopGroup bossGroup = new NioEventLoopGroup();
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
-
         try {
-
-            log.info("-----> start server: port="+port);
-
-            ChannelFuture channelFuture = new ServerBootstrap()
-                    .group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .childHandler(initializer)
-                    .option(ChannelOption.SO_BACKLOG,128)
-                    .option(ChannelOption.SO_REUSEADDR,true)
-                    .childOption(ChannelOption.SO_KEEPALIVE,false)
-                    .bind(host,port)
-                    .sync();
-
+            ChannelFuture channelFuture = startAsync();
+            channelFuture = channelFuture.sync();
             channelFuture
                     .channel()
                     .closeFuture()
                     .sync();
-
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.error("-----> server start fail.",e);
-        } finally {
+        }
+        finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
         }

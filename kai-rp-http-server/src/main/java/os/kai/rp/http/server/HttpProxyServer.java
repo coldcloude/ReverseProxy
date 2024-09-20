@@ -16,7 +16,7 @@ public class HttpProxyServer {
         proxyServer = new TextProxyServer(proxyHost,proxyPort,timeout);
     }
     public void start(){
-        httpServer.start();
+        httpServer.startAsync();
         proxyServer.start();
     }
     public static void main(String[] args){

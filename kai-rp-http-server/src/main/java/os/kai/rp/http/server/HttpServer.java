@@ -1,5 +1,6 @@
 package os.kai.rp.http.server;
 
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpServerCodec;
@@ -52,6 +53,9 @@ public class HttpServer {
         //build
         ChainedChannelInitializer initializer = new ChainedChannelInitializer(handlers);
         server = new NettyServer(initializer,host,port);
+    }
+    public ChannelFuture startAsync(){
+        return server.startAsync();
     }
     public void start(){
         server.start();
