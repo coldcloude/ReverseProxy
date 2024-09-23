@@ -4,6 +4,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -34,7 +35,7 @@ public class HttpClient {
             });
         }
         //http encoder and decoder
-        handlers.add(ch->new HttpServerCodec());
+        handlers.add(ch->new HttpClientCodec());
         //underlying handler
         handlers.add(ch->new HttpProxyServerHandler(host,port,session,hsid));
         //build

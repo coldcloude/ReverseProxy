@@ -30,16 +30,17 @@ public class HttpProxyServerHandler extends ChannelInboundHandlerAdapter {
             req.display(log);
             DefaultHttpRequest request = req.output();
             ctx.write(request);
+            ctx.flush();
         },payload->{
             payload.display(log);
             DefaultHttpContent content = payload.output();
             ctx.write(content);
+            ctx.flush();
         },()->{
             log.info(httpSessionId+" remote close");
             closed.set(true);
             ctx.disconnect();
         });
-        super.channelActive(ctx);
     }
     @Override
     public void channelRead(ChannelHandlerContext ctx,Object msg) throws Exception {
@@ -55,14 +56,13 @@ public class HttpProxyServerHandler extends ChannelInboundHandlerAdapter {
             payload.display(log);
             session.sendPayload(payload);
         }
-        super.channelRead(ctx,msg);
     }
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        session.unregister(httpSessionId);
         if(closed.compareAndSet(false,true)){
             log.info(httpSessionId+" close");
             session.sendClose(httpSessionId);
         }
-        super.channelInactive(ctx);
     }
 }

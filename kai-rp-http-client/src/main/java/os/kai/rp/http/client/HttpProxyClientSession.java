@@ -59,16 +59,22 @@ public class HttpProxyClientSession {
             }
         });
     }
+    public void start(){
+        processor.start();
+    }
+    public void shutdown(){
+        processor.shutdown();
+    }
     public void sendResponse(HttpResponseEntity entity) throws JsonProcessingException {
         String json = JacksonUtil.stringify(entity);
-        TextProxyHub.get().sendToClient(sessionId,HttpConstant.PREFIX_RES+json);
+        TextProxyHub.get().sendToServer(sessionId,HttpConstant.PREFIX_RES+json);
     }
     public void sendPayload(HttpPayloadEntity entity) throws JsonProcessingException {
         String json = JacksonUtil.stringify(entity);
-        TextProxyHub.get().sendToClient(sessionId,HttpConstant.PREFIX_PAYLOAD+json);
+        TextProxyHub.get().sendToServer(sessionId,HttpConstant.PREFIX_PAYLOAD+json);
     }
     public void sendClose(String hsid) {
-        TextProxyHub.get().sendToClient(sessionId,HttpConstant.PREFIX_CLOSE+hsid);
+        TextProxyHub.get().sendToServer(sessionId,HttpConstant.PREFIX_CLOSE+hsid);
     }
     public void register(String hsid, Consumer<HttpRequestEntity> requestHandler, Consumer<HttpPayloadEntity> payloadHandler, Runnable closeHandler){
         processor.set(hsid,data->{
@@ -82,5 +88,8 @@ public class HttpProxyClientSession {
                 closeHandler.run();
             }
         });
+    }
+    public void unregister(String hsid){
+        processor.unregister(hsid);
     }
 }

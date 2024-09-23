@@ -72,4 +72,7 @@ public class HttpProxyServerSession {
         context.closeHandler.set(closeHandler);
         contextMap.put(hsid,context);
     }
+    public void unregister(String hsid){
+        contextMap.remove(hsid);
+    }
 }

@@ -10,6 +10,7 @@ public class HttpProxyClient {
         proxyClient = new TextProxyClient(proxyHost,proxyPort,sessionId,timeout);
     }
     public void start(){
+        proxyClientSession.start();
         proxyClient.startWithRetry(-1,5000L);
     }
     public static void main(String[] args) throws Exception{
@@ -21,13 +22,13 @@ public class HttpProxyClient {
         int proxyPort = Integer.parseInt(args[5]);
         String sessionId = args[6];
         long timeout = Long.parseLong(args[7]);
-//        String schema = "http";
-//        String host = "mirrors.163.com";
-//        int port = 80;
+//        String schema = "https";
+//        String host = "baidu.com";
+//        int port = 443;
 //        int nop = 20;
 //        String proxyHost = "127.0.0.1";
 //        int proxyPort = 13355;
-//        String sessionId = HttpConstant.SID;
+//        String sessionId = "http";
 //        long timeout = 30000L;
         HttpProxyClient client = new HttpProxyClient(schema,host,port,nop,proxyHost,proxyPort,sessionId,timeout);
         client.start();

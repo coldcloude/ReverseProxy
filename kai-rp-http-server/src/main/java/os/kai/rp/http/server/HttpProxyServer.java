@@ -8,12 +8,12 @@ import os.kai.rp.server.TextProxyServer;
 public class HttpProxyServer {
     private final TextProxyServer proxyServer;
     private final HttpServer httpServer;
-    public HttpProxyServer(String host, int port, String proxyHost, int proxyPort, String sessionId, long timeout){
-        this(host,port,proxyHost,proxyPort,sessionId,timeout,null,null);
+    public HttpProxyServer(String host, int port, String proxyHost, int proxyPort, int nop, long timeout){
+        this(host,port,proxyHost,proxyPort,nop,timeout,null,null);
     }
-    public HttpProxyServer(String host, int port, String proxyHost, int proxyPort, String sessionId, long timeout, String keystore, String keystorePassword){
-        httpServer = new HttpServer(host,port,sessionId,keystore,keystorePassword);
-        proxyServer = new TextProxyServer(proxyHost,proxyPort,timeout);
+    public HttpProxyServer(String host, int port, String proxyHost, int proxyPort, int nop, long timeout, String keystore, String keystorePassword){
+        httpServer = new HttpServer(host,port,HttpConstant.SID,keystore,keystorePassword);
+        proxyServer = new TextProxyServer(proxyHost,proxyPort,nop,timeout);
     }
     public void start(){
         httpServer.startAsync();
@@ -24,13 +24,15 @@ public class HttpProxyServer {
         int port = Integer.parseInt(args[1]);
         String proxyHost = args[2];
         int proxyPort = Integer.parseInt(args[3]);
-        long timeout = Long.parseLong(args[4]);
+        int nop = Integer.parseInt(args[4]);
+        long timeout = Long.parseLong(args[5]);
 //        String host = "127.0.0.1";
 //        int port = 24466;
 //        String proxyHost = "127.0.0.1";
 //        int proxyPort = 13355;
+//        int nop = 2;
 //        long timeout = 30000L;
-        HttpProxyServer server = new HttpProxyServer(host,port,proxyHost,proxyPort,HttpConstant.SID,timeout);
+        HttpProxyServer server = new HttpProxyServer(host,port,proxyHost,proxyPort,nop,timeout);
         server.start();
     }
 }
