@@ -4,14 +4,14 @@ import os.kai.rp.client.TextProxyClient;
 import os.kai.rp.socks5.Socks5Constant;
 
 public class Socks5ProxyClient {
+    private final String sessionId;
     private final TextProxyClient proxyClient;
-    private final Socks5ClientGroup clientGroup;
     public Socks5ProxyClient(String proxyHost,int proxyPort,String sessionId,long timeout) {
-        clientGroup = new Socks5ClientGroup(sessionId);
+        this.sessionId = sessionId;
         proxyClient = new TextProxyClient(proxyHost,proxyPort,sessionId,timeout);
     }
     public void start() throws Exception{
-        clientGroup.start();
+        Socks5ClientGroup.start(sessionId);
         proxyClient.startWithRetry(-1,5000L);
     }
     public static void main(String[] args) throws Exception{

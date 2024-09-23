@@ -12,26 +12,30 @@ import os.kai.rp.util.NettyUtil;
 public class Socks5ProxyServer {
     private final TextProxyServer proxyServer;
     private final Socks5Server socks5Server;
-    private final Socks5ClientGroup clientGroup;
-    public Socks5ProxyServer(String host,int port,String proxyHost,int proxyPort,long timeout){
+    public Socks5ProxyServer(String host,int port,String proxyHost,int proxyPort,int nop,long timeout){
         socks5Server = new Socks5Server(host,port);
-        clientGroup = new Socks5ClientGroup(Socks5Constant.SID);
-        proxyServer = new TextProxyServer(proxyHost,proxyPort,timeout,(sid,ctx)->{
-            String addr = NettyUtil.getRemoteAddress(ctx);
-            Socks5Hub.get().registerProxy(addr,sid);
+        proxyServer = new TextProxyServer(proxyHost,proxyPort,nop,timeout,(sid,ctx)->{
+            if(!sid.equals(Socks5Constant.SID)){
+                String addr = NettyUtil.getRemoteAddress(ctx);
+                Socks5Hub.get().registerProxy(addr,sid);
+            }
             TextProxyHub.get().registerServerReceiver(sid,data->Socks5Hub.get().process(data));
         },(sid,ctx)->{
-            String addr = NettyUtil.getRemoteAddress(ctx);
-            Socks5Hub.get().unregisterProxy(addr);
-            TextProxyHub.get().unregisterServerReceiver(addr);
+            if(!sid.equals(Socks5Constant.SID)){
+                String addr = NettyUtil.getRemoteAddress(ctx);
+                Socks5Hub.get().unregisterProxy(addr);
+            }
+            TextProxyHub.get().unregisterServerReceiver(sid);
         });
     }
-    public void start() throws Exception {
+    public void start(boolean useLocalAsDefault) throws Exception {
         //server for outside socks5 connect in
         Thread sock5Thread = new Thread(socks5Server::start);
         sock5Thread.start();
         //not proxy to client
-        clientGroup.start();
+        if(useLocalAsDefault){
+            Socks5ClientGroup.start(Socks5Constant.SID);
+        }
         //proxy to client
         Thread proxyThread = new Thread(proxyServer::start);
         proxyThread.start();
@@ -43,13 +47,17 @@ public class Socks5ProxyServer {
         int port = Integer.parseInt(args[1]);
         String proxyHost = args[2];
         int proxyPort = Integer.parseInt(args[3]);
-        long timeout = Long.parseLong(args[4]);
+        int nop = Integer.parseInt(args[4]);
+        long timeout = Long.parseLong(args[5]);
+        boolean useLocalAsDefault = Integer.parseInt(args[6])>0;
 //        String host = "127.0.0.1";
 //        int port = 24466;
 //        String proxyHost = "127.0.0.1";
 //        int proxyPort = 13355;
+//        int nop = 8;
 //        long timeout = 30000L;
-        Socks5ProxyServer server = new Socks5ProxyServer(host,port,proxyHost,proxyPort,timeout);
-        server.start();
+//        boolean useLocalAsDefault = true;
+        Socks5ProxyServer server = new Socks5ProxyServer(host,port,proxyHost,proxyPort,nop,timeout);
+        server.start(useLocalAsDefault);
     }
 }

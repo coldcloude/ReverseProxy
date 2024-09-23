@@ -12,12 +12,8 @@ import os.kai.rp.util.JacksonUtil;
 
 @Slf4j
 public class Socks5ClientGroup {
-    private final String sessionId;
-    private final NioEventLoopGroup group = new NioEventLoopGroup();
-    public Socks5ClientGroup(String sessionId) {
-        this.sessionId = sessionId;
-    }
-    public void start(){
+    public static void start(String sessionId){
+        NioEventLoopGroup group = new NioEventLoopGroup();
         TextProxyHub.get().registerClientReceiver(sessionId,data->{
             if(data.startsWith(Socks5Constant.PREFIX_REQ)){
                 String json = data.substring(Socks5Constant.PREFIX_REQ_LEN);
