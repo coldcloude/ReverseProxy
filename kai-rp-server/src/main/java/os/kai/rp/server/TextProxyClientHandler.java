@@ -3,7 +3,7 @@ package os.kai.rp.server;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
-import os.kai.rp.LineDataNettySender;
+import os.kai.rp.LineDataNettyMultiplexSender;
 import os.kai.rp.util.NettyUtil;
 import os.kai.rp.TextProxyHub;
 import os.kai.rp.TextProxyTag;
@@ -24,6 +24,8 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
     private static final int RUNNING = 2;
     private static final int STOPPED = -1;
 
+    private final LineDataNettyMultiplexSender sender;
+
     private final long timeout;
 
     private final AtomicLong lastUpdateTime = new AtomicLong();
@@ -39,8 +41,6 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
     private final BiConsumer<String,ChannelHandlerContext> onConnect;
 
     private final BiConsumer<String,ChannelHandlerContext> onDisconnect;
-
-    private final LineDataNettySender sender = new LineDataNettySender();
 
     private volatile Timer timer;
 
@@ -60,7 +60,8 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    public TextProxyClientHandler(long timeout, BiConsumer<String,ChannelHandlerContext> onConnect, BiConsumer<String,ChannelHandlerContext> onDisconnect) {
+    public TextProxyClientHandler(LineDataNettyMultiplexSender sender, long timeout, BiConsumer<String,ChannelHandlerContext> onConnect, BiConsumer<String,ChannelHandlerContext> onDisconnect) {
+        this.sender = sender;
         this.timeout = timeout;
         this.onConnect = onConnect;
         this.onDisconnect = onDisconnect;
@@ -69,8 +70,8 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
         sessionId = null;
     }
 
-    public TextProxyClientHandler(long timeout) {
-        this(timeout,null,null);
+    public TextProxyClientHandler(LineDataNettyMultiplexSender sender, long timeout) {
+        this(sender,timeout,null,null);
     }
 
     @Override
@@ -111,10 +112,9 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
                     //stop session
                     if(sessionId!=null){
                         TextProxyHub.get().unregisterClientReceiver(sessionId);
+                        sender.unregister(sessionId);
                         sessionId = null;
                     }
-                    //stop sender
-                    sender.shutdown();
                     //custom disconnect op
                     if(onDisconnect!=null){
                         onDisconnect.accept(sessionId,ctx);
@@ -144,10 +144,10 @@ public class TextProxyClientHandler extends ChannelInboundHandlerAdapter {
                         if(s==PENDING){
                             state.set(RUNNING);
                             //start sender
-                            sender.set(ctx);
-                            sender.start();
+                            sender.register(sid);
+                            sender.connect(sid,ctx);
                             //register receiver
-                            TextProxyHub.get().registerClientReceiver(sid,sender);
+                            TextProxyHub.get().registerClientReceiver(sid,data->sender.accept(sid,data));
                             sessionId = sid;
                             //custom connect op
                             if(onConnect!=null){

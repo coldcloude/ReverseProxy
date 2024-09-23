@@ -10,7 +10,7 @@ import java.util.Set;
 public class TestServer {
     public static void main(String[] args) throws Exception {
         new Thread(()->{
-            TextProxyServer server = new TextProxyServer("0.0.0.0",13355,30000L);
+            TextProxyServer server = new TextProxyServer("0.0.0.0",13355,2,30000L);
             server.start();
         }).start();
         Set<String> sidSet = new HashSet<>();
